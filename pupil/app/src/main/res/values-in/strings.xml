@@ -1,0 +1,236 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="warning">Peringatan</string>
+    <string name="error">Kesalahan</string>
+
+    <string name="ignore">Abaikan</string>
+
+    <string name="unlimited">Tidak Terbatas</string>
+
+    <string name="copied_to_clipboard">Disalin ke papan klip</string>
+
+    <string name="channel_download">Unduh</string>
+    <string name="channel_download_description">Tampilkan status unduhan</string>
+
+    <string name="channel_downloader">Pengunduh</string>
+    <string name="channel_downloader_description">Tampilkan status pengunduh</string>
+
+    <string name="channel_update">Perbarui</string>
+    <string name="channel_update_description">Tampilkan kemajuan pembaruan</string>
+
+    <string name="channel_transfer">Transfer</string>
+    <string name="channel_transfer_description">Tampilkan kemajuan transfer data ke perangkat lain</string>
+
+    <string name="unable_to_connect">Gagal tersambung ke hitomi.la</string>
+
+    <string name="lock_corrupted">Berkas kunci rusak! Dimohon untuk menginstal ulang Pupil</string>
+
+    <string name="main_no_result">Hasil kosong</string>
+
+    <string name="unaccessible_download_folder">Dari Android 11 dan yang lebih baru, folder Unduhan yang sekarang tidak akan bisa diakses dari aplikasi luar. Pindahkan folder Unduhan?</string>
+
+    <string name="notification_denied">Izin memunculkan notifikasi dibutuhkan untuk melakukan unduhan latar belakang. Jika anda menolak notifikasi dari aplikasi ini, pembaruan dari dalam aplikasi dan unduhan latar belakang akan dinonaktifkan.</string>
+
+    <string name="main_drawer_home">Beranda</string>
+    <string name="main_drawer_history">Riwayat</string>
+    <string name="main_drawer_downloads">Diunduh</string>
+    <string name="main_drawer_favorite">Favorit</string>
+    <string name="main_drawer_group_contact_title">Kontak</string>
+    <string name="main_drawer_group_contact_help">Bantuan</string>
+    <string name="main_drawer_group_contact_homepage">Kunjungi situs apl.</string>
+    <string name="main_drawer_group_contact_github">Kunjungi github</string>
+    <string name="main_drawer_group_contact_email">Email saya!</string>
+    <string name="main_drawer_grouop_contact_discord">Discord</string>
+
+    <string name="main_menu_thin">Mode Tipis</string>
+
+    <string name="main_menu_sort">Urutan</string>
+    <string name="main_menu_sort_date_added">Tanggal Ditambahkan</string>
+    <string name="main_menu_sort_date_published">Tanggal Publikasi</string>
+    <string name="main_menu_sort_popular_today">Populer: Hari Ini</string>
+    <string name="main_menu_sort_popular_week">Populer: Minggu Ini</string>
+    <string name="main_menu_sort_popular_month">Populer: Bulan Ini</string>
+    <string name="main_menu_sort_popular_year">Populer: Tahun ini</string>
+    <string name="main_menu_sort_random">Acak</string>
+
+    <string name="main_jump_title">Lompat ke Halaman</string>
+    <string name="main_jump_message">Sekarang halaman: %1$d\nHalaman paling belakang: %2$d</string>
+    <string name="main_open_gallery_by_id">Buka Galeri dari ID</string>
+    <string name="reader_failed_to_find_gallery">Gagal membuka galeri</string>
+    <string name="main_fab_random">Buka galeri acak</string>
+    <string name="main_fab_cancel">Batalkan semua unduhan</string>
+
+    <string name="main_move_to_page">Pergi ke halaman %1$d</string>
+
+    <string name="main_download">UNDUH</string>
+    <string name="main_delete">HAPUS</string>
+
+    <string name="update_title">Pembaruan tersedia</string>
+    <string name="update_download_completed">Unduhan Pembaruan Selesai</string>
+    <string name="update_download_completed_description">Tap disini untuh memperbarui</string>
+    <string name="update_notification_description">Mengunduh pembaruan&#8230;</string>
+    <string name="update_release_note"># Catatan rilis (v%1$s)\n%2$s</string>
+
+    <string name="search_hint">Pencarian galeri</string>
+    <string name="search_all">Mencari seluruh galeri</string>
+    <string name="search_show_histories">Tampilkan riwayat</string>
+    <string name="search_show_tags">Tampilkan tag favorit</string>
+
+    <string name="gallery_details">Rincian</string>
+    <string name="gallery_thumbnails">Thumbnail</string>
+    <string name="gallery_related">Galeri Terkait</string>
+    <string name="gallery_artists">Seniman</string>
+    <string name="gallery_groups">Grup</string>
+    <string name="gallery_language">Bahasa</string>
+    <string name="gallery_series">Seri</string>
+    <string name="gallery_characters">Karakter</string>
+    <string name="gallery_tags">Tag</string>
+
+    <string name="galleryblock_series">Seri: %1$s</string>
+    <string name="galleryblock_type">Jenis: %1$s</string>
+    <string name="galleryblock_language">Bahasa: %1$s</string>
+
+    <!-- READER -->
+
+    <string name="reader_loading">Memuat</string>
+    <string name="reader_go_to_page">Ke halaman</string>
+    <string name="reader_fab_fullscreen">Layar penuh</string>>
+    <string name="reader_fab_retry">Coba lagi</string>
+    <string name="reader_fab_auto">Gulir dengan kedipan mata</string>
+    <string name="reader_fab_auto_cancel">Berhenti gulir dengan kedipan mata</string>
+    <string name="reader_fab_download">Unduhan latar belakang</string>
+    <string name="reader_fab_download_cancel">Batalkan unduhan latar belakang</string>
+    <string name="reader_notification_text">Mengunduh&#8230;</string>
+    <string name="reader_notification_complete">Unduhan selesai</string>
+
+    <string name="camera_denied">Deteksi kedipan mata tidak bisa berfungsi tanpa izin kamera</string>
+    <string name="no_camera">Tidak terdeteksi kamera depan di perangkat ini</string>
+
+    <!-- DOWNLOADER -->
+    <string name="downloader_running">Pengunduh dimulai…</string>
+
+    <!-- SETTINGS -->
+
+    <string name="settings_title">Pengaturan</string>
+
+    <string name="settings_app_version_title">Versi aplikasi (Tap untuk memeriksa pembaruan)</string>
+    <string name="settings_app_version_description">v%s</string>
+    <string name="settings_beta">Perbarui dari kanal beta</string>
+
+    <!-- SEARCH -->
+
+    <string name="settings_search_title">Pengaturan pencarian</string>
+    <string name="settings_galleries_per_page">Galeri per halaman</string>
+    <string name="settings_default_query">Kueri pencarian default</string>
+
+    <!-- SETTINGS/STORAGE -->
+
+    <string name="settings_storage">Penyimpanan</string>
+
+    <!-- SETTINGS/STORAGE / MANAGE STORAGE -->
+
+    <string name="settings_manage_storage">Kelola Penyimpanan</string>
+    <string name="settings_storage_usage">Sedang menggunakan %s</string>
+    <string name="settings_storage_usage_loading">Menghitung penggunaan penyimpanan…</string>
+    <string name="settings_clear_cache">Bersihkan cache</string>
+    <string name="settings_clear_cache_alert_message">Menghapus cache bisa mempengaruhi kecepatan memuat gambar, lanjutkan?</string>
+    <string name="settings_recover_downloads">Buat ulang daftar terunduh</string>
+    <string name="settings_clear_downloads">Bersihkan daftar unduhan</string>
+    <string name="settings_clear_downloads_alert_message">Ini akan menghapus semua hasil unduhan.\nLanjutkan?</string>
+    <string name="settings_clear_history">Hapus riwayat</string>
+    <string name="settings_clear_history_alert_message">Ini akan menghapus seluruh isi riwayat, lanjutkan?</string>
+    <string name="settings_clear_history_summary">%1$d entri riwayat disimpan</string>
+
+    <!-- SETTINGS/STORAGE / MISCELLANEOUS -->
+
+    <string name="settings_download_folder_name">Pola nama folder</string>
+    <string name="settings_invalid_download_folder_name">Pola nama folder mengandung karakter yang tidak sah.</string>
+    <string name="settings_download_folder_name_message">%s akan digantikan dengan nilai yang disesuaikan\n\n%s</string>
+    <string name="settings_download_folder">Folder unduhan</string>
+    <string name="settings_download_folder_removable">Penyimpanan Lepasan</string>
+    <string name="settings_download_folder_internal">Penyimpanan Internal</string>
+    <string name="settings_download_folder_available">%s tersedia</string>
+    <string name="settings_download_folder_custom">Lokasi Kustom</string>
+    <string name="settings_download_folder_not_writable">Folder tidak dapat ditulisi. Silahkan pilih yang lain.</string>
+    <string name="settings_cache_limit">Batas Besar Cache</string>
+    <string name="settings_nomedia_title">Sembunyikan gambar dari galeri</string>
+    <string name="settings_low_quality">Gambar kualitas rendah</string>
+    <string name="settings_low_quality_summary">Muat versi gambar kualitas rendah untuk menghemat waktu muat dan penggunaan data</string>
+    <string name="settings_transfer_data">Transfer data ke perangkat lain</string>
+
+    <!-- SETTINGS/APP LOCK -->
+
+    <string name="settings_app_lock">Kunci Aplikasi</string>
+    <string name="settings_app_lock_type">Jenis kunci aplikasi</string>
+
+    <!-- SETTINGS/NETWORKING -->
+    <string name="settings_networking">Jaringan</string>
+    <string name="settings_mirror_summary">Muat gambar dari jaringan mirror</string>
+    <string name="settings_proxy_title">Proxy</string>
+    <string name="settings_max_concurrent_download">Jumlah Unduhan Bersamaan</string>
+
+    <!-- SETTINGS/MISCELLANEOUS -->
+
+    <string name="settings_miscellaneous_title">Lain-Lain</string>
+    <string name="settings_tag_translation">Bahasa Tag</string>
+    <string name="settings_tag_translation_message">Berpartisipasi dalam terjemahan di GitHub</string>
+    <string name="settings_rtl">Membalik halaman dari kanan-ke-kiri</string>
+    <string name="settings_security_mode_title">Nyalakan mode kemananan</string>
+    <string name="settings_security_mode_summary">Buat tampilan tidak bisa dilihat dari aplikasi baru-baru ini dan tangkapan layar.</string>
+    <string name="settings_dark_mode_title">Tema gelap</string>
+    <string name="settings_dark_mode_summary">Jaga matamu dari sinar terang layar.</string>
+    <string name="settings_import_old_galleries">Impor galeri lama</string>
+    <string name="settings_user_id">ID Pengguna</string>
+    <string name="settings_oss">Info Sumber Terbuka</string>
+
+    <!-- MANAGE FAVORITES -->
+
+    <string name="settings_manage_favorites">Kelola favorit</string>
+    <string name="settings_backup_title">Cadangkan favorit</string>
+    <string name="settings_backup_failed">Gagal Mengunggah</string>
+    <string name="settings_backup_share">Bagikan Cadangan</string>
+    <string name="settings_backup_file_created">Berkas cadangan dibuat</string>
+    <string name="settings_restore_title">Kembalikan favorit</string>
+    <string name="settings_restore_failed">Gagal mengembalikan</string>
+    <string name="settings_restore_success">%1$d entri dikembalikan</string>
+
+    <!-- SETTINGS/APP LOCK ACTIVITY -->
+
+    <string name="settings_lock_none">Tidak ada</string>
+    <string name="settings_lock_pattern">Pola</string>
+    <string name="settings_lock_password">Kata Sandi</string>
+    <string name="settings_lock_biometrics">Biometrik</string>
+    <string name="settings_lock_fingerprint">Sidik Jari</string>
+    <string name="settings_lock_fingerprint_without_lock">Sidik Jari hanya bisa dipakai jika jenis kunci lain juga aktif</string>
+    
+    <string name="settings_lock_enabled">Aktif</string>
+    <string name="settings_lock_confirm">Masukkan kunci yang sama sekali lagi untuk mengkonfirmasi</string>
+    <string name="settings_lock_remove_message">Hilangkan kunci?</string>
+    <string name="settings_lock_wrong_confirm">Kunci berbeda dari sebelumnya, silahkan coba lagi.</string>
+    
+    <string name="settings_lock_fingerprint_prompt">Kunci Sidik Jari Pupil™</string>
+    <string name="settings_lock_fingerprint_prompt_subtitle">Kami perlu bukti bahwa anda memang ras terkuat dibumi.</string>
+
+    <!-- SETTINGS/DEFAULT QUERY DIALOG -->
+
+    <string name="default_query_dialog_title">Kelola kueri pencarian default</string>
+    <string name="default_query_dialog_language">Bahasa: </string>
+    <string name="default_query_dialog_filter_BL">Jangan tampilkan BL</string>
+    <string name="default_query_dialog_filter_guro">Jangan tampilkan Guro</string>
+    <string name="default_query_dialog_filter_loli">Saya bukan pedo</string>
+    <string name="default_query_dialog_language_selector_none">Apapun</string>
+    <string name="settings_mirror_title">Mirror</string>
+
+    <!-- PROXY DIALOG -->
+    <string name="proxy_dialog_type">Jenis</string>
+    <string name="proxy_dialog_addr_hint">Alamat</string>
+    <string name="proxy_dialog_username_hint">Nama Pengguna</string>
+    <string name="proxy_dialog_password_hint">Kata Sandi</string>
+    <string name="proxy_dialog_error">Nilai salah</string>
+    <string name="proxy_dialog_server">Server</string>
+
+    <!-- IMPORT OLD GALLERIES -->
+    <string name="import_old_galleries_folder_not_readable">Folder ini tidak bisa dibaca</string>
+    <string name="import_old_galleries_notification">Mengimpor galeri lama…</string>
+    <string name="import_old_galleries_notification_done">Impor selesai</string>
+
+</resources>
