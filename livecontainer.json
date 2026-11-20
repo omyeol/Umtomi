@@ -1,0 +1,79 @@
+{
+  "name": "Umtomi iOS",
+  "identifier": "xyz.sabok.umtomi.source",
+  "website": "https://github.com/omyeol/Umtomi",
+  "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/umtomi-icon.png",
+  "apps": [
+    {
+      "name": "Umtomi",
+      "bundleIdentifier": "xyz.sabok.umtomi",
+      "developerName": "omyeol",
+      "localizedDescription": "Umtomi iOS.",
+      "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/umtomi-icon.png",
+      "versions": [
+        {
+          "version": "5.4.6",
+          "buildVersion": "8",
+          "buildNumber": "8",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi/releases/download/ios-v5.4.6/Umtomi-iOS-5.4.6.ipa",
+          "size": 1942283,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "5.4.5",
+          "buildVersion": "7",
+          "buildNumber": "7",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi-releases/releases/download/ios-v5.4.5/Umtomi-iOS-5.4.5.ipa",
+          "size": 1905723,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "5.4.4",
+          "buildVersion": "6",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi-releases/releases/download/v5.14.11/Umtomi-iOS-5.4.4.ipa",
+          "size": 1896284,
+          "minOSVersion": "17.0",
+          "buildNumber": "6"
+        },
+        {
+          "version": "5.4.3",
+          "buildVersion": "5",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi-releases/releases/download/v5.14.11/Umtomi-iOS-5.4.3.ipa",
+          "size": 1803291,
+          "minOSVersion": "17.0",
+          "buildNumber": "5"
+        },
+        {
+          "version": "5.4.1",
+          "buildVersion": "4",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi-releases/releases/download/v5.14.11/Umtomi-iOS-5.4.1-build4.ipa",
+          "size": 1773601,
+          "minOSVersion": "17.0",
+          "buildNumber": "4"
+        },
+        {
+          "version": "5.4.1",
+          "buildVersion": "3",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi-releases/releases/download/v5.14.11/Umtomi-iOS-5.4.1.ipa",
+          "size": 1773544,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "5.3.24",
+          "buildVersion": "1",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi-releases/releases/download/v5.14.11/Umtomi-iOS-5.3.24.ipa",
+          "size": 960287,
+          "minOSVersion": "17.0"
+        }
+      ]
+    }
+  ],
+  "news": []
+}
