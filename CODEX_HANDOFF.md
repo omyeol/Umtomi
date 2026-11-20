@@ -1,3 +1,15 @@
+# Android 5.15.5 & iOS 5.4.8 (Favorites sort, Settings tab order, Search pull-to-refresh, persistent folder counts, Artist search overlay)
+
+- Implemented across both iOS (`Models.swift`, `AppStore.swift`, `Views.swift`, `TabBarSettingsTests.swift`, `Localizable.strings`, `project.yml` `5.4.8` / `10`) and Android (`WorkspaceNavigation.kt`, `MainActivity.kt`, `PortFavoritesView.kt`, `ClassicBrowseActivity.kt`, `port_strings.xml`, `PortParityTest.kt`, `build.gradle.kts` `5.15.5` / `105`):
+  - Favorites sorting (`added` / `upload` / `name` with `descending` / `ascending`).
+  - Added `Settings` (`UmtomiTab.settings` / `WorkspaceTab.SETTINGS`) to configurable tab bar order and More overflow.
+  - Added pull-to-refresh on Search (`BrowseView` `.refreshable` + `AppStore.refreshSearch` on iOS; `SwipeRefreshLayout` on Android).
+  - Fixed cold-start `"0 galleries"` bug in auto-rule favorite folders by persisting resolved auto-match caches (`umtomi.ios.favoriteAutoMatchCache` / `port_favorite_auto_cache`), preserving warm counts on launch, and refreshing child folder rules automatically.
+  - Replaced Favorites -> Artists tab-jump with full browse-like overlay search (`ArtistSearchOverlayView` on iOS; `MainActivity.showSearchOverlay` on Android) supporting grid cards, query editing, sort, pagination, and pull-to-refresh.
+- Verification & Artifacts:
+  - Android `.\umtomi\Build-Android.ps1 -Test` passed (`assembleDebug`, `lintDebug`, 22 JVM unit tests across 7 suites with 0 failures/errors/skipped). `artifacts/Umtomi-v5.15.5.apk` and `C:\Users\peopl\OneDrive\DEV\APK\Umtomi-v5.15.5.apk` match (21,168,503 bytes, SHA-256 `71DBDBFB89A8D4E00D287BC89BC8C1A86532AC0D6385957412EC2DA96BEE3106`). Published `https://github.com/omyeol/Umtomi/releases/tag/v5.15.5` (`latest`, verified unauthenticated).
+  - iOS GitHub Actions (`https://github.com/omyeol/Umtomi/actions/runs/44757816227`) succeeded; `artifacts/Umtomi-iOS-5.4.8.ipa` verified (2,024,757 bytes, `xyz.sabok.umtomi` / `5.4.8` / `10`, SHA-256 `6f1711d669967704850eb1cf23615ee4254af52ab148190996dd93cba9f57a51`). Published `https://github.com/omyeol/Umtomi/releases/tag/ios-v5.4.8` and verified `https://raw.githubusercontent.com/omyeol/Umtomi/main/livecontainer.json` (`042092f`).
+
 # iOS 5.4.7 instant biometric unlock
 
 - Updated `umtomi/ios/Umtomi/AppLock.swift`, `umtomi/ios/Umtomi/AppLockViews.swift`, and `umtomi/ios/project.yml` (`5.4.7`, build `9`):
