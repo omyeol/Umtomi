@@ -12,6 +12,15 @@
       "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/umtomi-icon.png",
       "versions": [
         {
+          "version": "5.4.8",
+          "buildVersion": "10",
+          "buildNumber": "10",
+          "date": "2026-11-20",
+          "downloadURL": "https://github.com/omyeol/Umtomi/releases/download/ios-v5.4.8/Umtomi-iOS-5.4.8.ipa",
+          "size": 2024757,
+          "minOSVersion": "17.0"
+        },
+        {
           "version": "5.4.7",
           "buildVersion": "9",
           "buildNumber": "9",
