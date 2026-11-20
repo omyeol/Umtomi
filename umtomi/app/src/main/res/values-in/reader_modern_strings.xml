@@ -1,0 +1,7 @@
+<resources>
+    <string name="reader_return">Kembali ke daftar</string>
+    <string name="reader_previous_page">Halaman sebelumnya</string>
+    <string name="reader_next_page">Halaman berikutnya</string>
+    <string name="reader_tools">Alat pembaca</string>
+    <string name="reader_favorite_label">Favorit</string>
+</resources>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~     Umtomi, Hitomi.la viewer for Android
+  ~     Copyright (C) 2019  tom5079
+  ~
+  ~     This program is free software: you can redistribute it and/or modify
+  ~     it under the terms of the GNU General Public License as published by
+  ~     the Free Software Foundation, either version 3 of the License, or
+  ~     (at your option) any later version.
+  ~
+  ~     This program is distributed in the hope that it will be useful,
+  ~     but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~     GNU General Public License for more details.
+  ~
+  ~     You should have received a copy of the GNU General Public License
+  ~     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/reader_canvas"
+    tools:context=".ui.ReaderActivity">
+
+    <LinearLayout
+        android:id="@+id/reader_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/reader_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@color/reader_surface"
+            app:navigationIcon="@drawable/reader_back"
+            app:navigationContentDescription="@string/reader_return"
+            app:titleTextColor="@color/reader_text"
+            app:subtitleTextColor="@color/reader_muted"
+            app:titleTextAppearance="@style/TextAppearance.MaterialComponents.Subtitle1" />
+
+        <HorizontalScrollView
+            android:id="@+id/reader_tab_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:background="@color/reader_surface"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:id="@+id/reader_tabs"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
+        <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
+            android:id="@+id/scroller"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            app:addLastItemPadding="false"
+            app:handleDrawable="@drawable/thumb"
+            app:handleHasFixedSize="true"
+            app:handleHeight="72dp"
+            app:handleVisibilityDuration="1000"
+            app:handleWidth="24dp"
+            app:popupDrawable="@android:color/transparent">
+
+            <xyz.sabok.umtomi.ui.ContinuousReaderView
+                android:id="@+id/recyclerview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
+
+        <LinearLayout
+            android:id="@+id/reader_dock"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:background="@color/reader_surface">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/reader_previous"
+                style="@style/ReaderIconButton"
+                android:layout_width="48dp" android:layout_height="48dp"
+                android:contentDescription="@string/reader_previous_page"
+                app:icon="@drawable/reader_back" />
+            <LinearLayout android:layout_width="0dp" android:layout_height="match_parent"
+                android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                <TextView android:id="@+id/reader_page_label"
+                    android:layout_width="match_parent" android:layout_height="24dp"
+                    android:gravity="center" android:textSize="12sp" android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/reader_muted" android:text="@string/page_indicator_placeholder" />
+                <SeekBar android:id="@+id/reader_page_slider"
+                    android:layout_width="match_parent" android:layout_height="32dp"
+                    android:paddingStart="12dp" android:paddingEnd="12dp"
+                    android:contentDescription="@string/reader_go_to_page"
+                    android:progressTint="@color/reader_accent" android:thumbTint="@color/reader_accent" />
+            </LinearLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/reader_next"
+                style="@style/ReaderIconButton"
+                android:layout_width="48dp" android:layout_height="48dp"
+                android:contentDescription="@string/reader_next_page"
+                app:icon="@drawable/reader_next" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/reader_single_page"
+                android:layout_width="56dp" android:layout_height="48dp"
+                android:minWidth="0dp" android:paddingLeft="0dp" android:paddingRight="0dp"
+                android:text="한 컷" android:textSize="12sp" android:textAllCaps="false"
+                android:contentDescription="한 컷 보기로 전환"
+                android:textColor="@color/reader_canvas"
+                app:backgroundTint="@color/reader_accent" app:cornerRadius="16dp" />
+
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <include
+        android:id="@+id/eye_card"
+        layout="@layout/reader_eye_card"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="8dp"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/download_progressbar"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:progressTint="@color/reader_accent" />
+
+    <com.github.clans.fab.FloatingActionMenu
+        android:id="@+id/fab"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        app:menu_colorNormal="@color/colorAccent">
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/download_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_label="@string/reader_fab_download"
+            app:fab_size="mini"
+            app:srcCompat="@drawable/ic_download" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/retry_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_label="@string/reader_fab_retry"
+            app:fab_size="mini"
+            app:srcCompat="@drawable/refresh" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/auto_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_label="@string/reader_fab_auto"
+            app:fab_size="mini"
+            app:srcCompat="@drawable/eye_white" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fullscreen_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_label="@string/reader_fab_fullscreen"
+            app:fab_size="mini"
+            app:srcCompat="@drawable/ic_fullscreen" />
+
+    </com.github.clans.fab.FloatingActionMenu>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+

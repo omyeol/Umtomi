@@ -28,6 +28,7 @@ struct UmtomiLockGate: View {
 private struct AppUnlockView: View {
     @EnvironmentObject private var lock: AppLock
     @Environment(\.scenePhase) private var phase
+    @Environment(\.colorScheme) private var colorScheme
     @State private var password = ""
     @State private var legacyAuthorized = false
     @State private var triedBiometrics = false
@@ -74,7 +75,7 @@ private struct AppUnlockView: View {
         .padding(24)
         .frame(maxWidth: 420)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.background)
+        .background(colorScheme == .dark ? Color.black : Color(uiColor: .systemBackground))
         .task(id: phase) {
             if phase == .active, lock.biometrics, !lock.requiresPasswordSetup, !triedBiometrics {
                 triedBiometrics = true
@@ -102,6 +103,7 @@ private struct AppUnlockView: View {
 @MainActor
 struct AppLockSettingsView: View {
     @EnvironmentObject private var lock: AppLock
+    @Environment(\.colorScheme) private var colorScheme
     @State private var passwordAction: AppLockPasswordForm.Action?
     @State private var minutes = ""
     @State private var invalidMinutes = false
@@ -165,11 +167,15 @@ struct AppLockSettingsView: View {
                 }
             }
         }
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("App lock")
         .onAppear { minutes = String(lock.minutes) }
         .sheet(item: $passwordAction) { action in
             NavigationStack {
                 Form { AppLockPasswordForm(action: action) }
+                    .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+                    .background(colorScheme == .dark ? Color.black : Color.clear)
                     .navigationTitle(action.title)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {

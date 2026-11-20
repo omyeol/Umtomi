@@ -1,0 +1,38 @@
+<resources>
+
+    <style name="OledAlertDialogTheme" parent="ThemeOverlay.MaterialComponents.Dark">
+        <item name="android:colorBackground">@color/workspace_surface</item>
+        <item name="colorSurface">@color/workspace_surface</item>
+        <item name="colorPrimary">@color/workspace_accent</item>
+        <item name="colorAccent">@color/workspace_accent</item>
+        <item name="android:textColorPrimary">@color/workspace_text</item>
+        <item name="android:textColorSecondary">@color/workspace_muted</item>
+    </style>
+
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/workspace_accent</item>
+        <item name="colorPrimaryDark">@color/workspace_background</item>
+        <item name="colorAccent">@color/workspace_accent</item>
+        <item name="colorSurface">@color/workspace_surface</item>
+        <item name="colorOnSurface">@color/workspace_text</item>
+        <item name="android:colorBackground">@color/workspace_background</item>
+        <item name="android:windowBackground">@color/workspace_background</item>
+        <item name="android:statusBarColor">@color/workspace_background</item>
+        <item name="android:navigationBarColor">@color/workspace_background</item>
+        <item name="alertDialogTheme">@style/OledAlertDialogTheme</item>
+    </style>
+
+    <style name="NoActionBarAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/workspace_accent</item>
+        <item name="colorPrimaryDark">@color/workspace_background</item>
+        <item name="colorAccent">@color/workspace_accent</item>
+        <item name="colorSurface">@color/workspace_surface</item>
+        <item name="colorOnSurface">@color/workspace_text</item>
+        <item name="android:colorBackground">@color/workspace_background</item>
+        <item name="android:windowBackground">@color/workspace_background</item>
+        <item name="android:statusBarColor">@color/workspace_background</item>
+        <item name="android:navigationBarColor">@color/workspace_background</item>
+        <item name="alertDialogTheme">@style/OledAlertDialogTheme</item>
+    </style>
+
+</resources>

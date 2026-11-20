@@ -1,0 +1,7 @@
+<resources>
+    <string name="reader_return">Back to library</string>
+    <string name="reader_previous_page">Previous page</string>
+    <string name="reader_next_page">Next page</string>
+    <string name="reader_tools">Reader tools</string>
+    <string name="reader_favorite_label">Favorite</string>
+</resources>

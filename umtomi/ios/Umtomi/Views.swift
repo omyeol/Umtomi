@@ -75,7 +75,11 @@ struct RootView: View {
         if store.settings.showsMoreTab {
             items.append(.init(id: "more", title: store.localized("More"), symbol: "ellipsis"))
         }
-        return NativeBottomTabBar(items: items, selection: moreSelected ? "more" : store.selectedTab.rawValue) { id in
+        return NativeBottomTabBar(
+            items: items,
+            selection: moreSelected ? "more" : store.selectedTab.rawValue,
+            isDarkMode: store.settings.darkModeEnabled
+        ) { id in
             if id == "more" { showingMore = true }
             else if let tab = UmtomiTab(rawValue: id) {
                 showingMore = false
@@ -83,7 +87,11 @@ struct RootView: View {
             }
         }
         .frame(height: 49)
-        .background { Rectangle().fill(.bar).ignoresSafeArea(edges: .bottom) }
+        .background {
+            Rectangle()
+                .fill(store.settings.darkModeEnabled ? AnyShapeStyle(Color.black) : AnyShapeStyle(.bar))
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 
     private var moreMenu: some View {
@@ -103,6 +111,8 @@ struct RootView: View {
                     Label("Settings", systemImage: "gearshape")
                 }
             }
+            .scrollContentBackground(store.settings.darkModeEnabled ? .hidden : .automatic)
+            .background(store.settings.darkModeEnabled ? Color.black : Color.clear)
             .navigationTitle("More")
         }
     }
@@ -164,6 +174,7 @@ private struct NativeBottomTabBar: UIViewRepresentable {
 
     let items: [Item]
     let selection: String
+    let isDarkMode: Bool
     let select: (String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -178,6 +189,19 @@ private struct NativeBottomTabBar: UIViewRepresentable {
     func updateUIView(_ bar: UITabBar, context: Context) {
         let coordinator = context.coordinator
         coordinator.select = select
+        if coordinator.isDarkMode != isDarkMode {
+            coordinator.isDarkMode = isDarkMode
+            let appearance = UITabBarAppearance()
+            if isDarkMode {
+                appearance.configureWithOpaqueBackground()
+                appearance.backgroundColor = .black
+                appearance.shadowColor = UIColor(white: 0.14, alpha: 1)
+            } else {
+                appearance.configureWithDefaultBackground()
+            }
+            bar.standardAppearance = appearance
+            bar.scrollEdgeAppearance = appearance
+        }
         if coordinator.items != items {
             coordinator.items = items
             bar.setItems(items.enumerated().map { index, item in
@@ -190,6 +214,7 @@ private struct NativeBottomTabBar: UIViewRepresentable {
 
     final class Coordinator: NSObject, UITabBarDelegate {
         var items: [Item] = []
+        var isDarkMode: Bool?
         var select: ((String) -> Void)?
 
         func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
@@ -229,11 +254,7 @@ struct ReaderFloatingButton: View {
 struct AppSwitcherShieldView: View {
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.08, green: 0.08, blue: 0.10)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            Color.black
 
             VStack(spacing: 14) {
                 Image(systemName: "eye.slash.fill")
@@ -251,6 +272,7 @@ struct AppSwitcherShieldView: View {
 
 struct BrowseView: View {
     @ObservedObject var store: AppStore
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var isOpenByIDPresented = false
     @State private var isJumpToPagePresented = false
@@ -296,6 +318,7 @@ struct BrowseView: View {
             }
             .padding()
         }
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Umtomi")
         .searchable(text: $store.searchQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search galleries")
         .onSubmit(of: .search) {
@@ -555,6 +578,7 @@ struct TagFilterCardView: View {
 
 struct AlgorithmView: View {
     @ObservedObject var store: AppStore
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Group {
@@ -589,6 +613,8 @@ struct AlgorithmView: View {
                 .listStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Algorithm")
         .onAppear {
             Task {
@@ -605,12 +631,13 @@ struct AlgorithmView: View {
 
 struct GalleryCardView: View {
     let summary: GallerySummary
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.secondary.opacity(0.08))
+                    .fill(colorScheme == .dark ? Color.black : Color.secondary.opacity(0.08))
 
                 RemoteImageView(
                     url: summary.coverURL,
@@ -645,7 +672,16 @@ struct GalleryCardView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18))
+        .background(
+            colorScheme == .dark ? AnyShapeStyle(Color(white: 0.06)) : AnyShapeStyle(.thinMaterial),
+            in: RoundedRectangle(cornerRadius: 18)
+        )
+        .overlay {
+            if colorScheme == .dark {
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color(white: 0.14), lineWidth: 0.5)
+            }
+        }
     }
 
     private var subtitle: String {
@@ -668,6 +704,7 @@ struct SavedGalleryListView: View {
     let emptyTitle: String
     let emptyMessage: String
     @ObservedObject var store: AppStore
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Group {
@@ -688,6 +725,8 @@ struct SavedGalleryListView: View {
                 .listStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle(LocalizedStringKey(title))
     }
 }
@@ -704,6 +743,7 @@ struct FavoritesView: View {
     let folderID: UUID?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var editorContext: FavoriteFolderEditorContext?
     @State private var pendingDeleteFolder: FavoriteFolder?
@@ -756,6 +796,8 @@ struct FavoritesView: View {
                 worksContent
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle(title)
         .toolbar {
             if isShowingWorksSection {
@@ -1047,6 +1089,7 @@ struct FavoriteFolderEditorView: View {
     let isNewFolder: Bool
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var name: String
     @State private var autoRuleQuery: String
@@ -1096,6 +1139,8 @@ struct FavoriteFolderEditorView: View {
                 }
             }
         }
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle(isNewFolder ? "New Folder" : "Edit Folder")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -1156,6 +1201,7 @@ struct FavoriteFolderSelectionRow: View {
 
 struct DownloadsListView: View {
     @ObservedObject var store: AppStore
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Group {
@@ -1212,18 +1258,21 @@ struct DownloadsListView: View {
                 .listStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Downloads")
     }
 }
 
 struct GalleryRowView: View {
     let summary: GallerySummary
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.secondary.opacity(0.08))
+                    .fill(colorScheme == .dark ? Color(white: 0.06) : Color.secondary.opacity(0.08))
 
                 RemoteImageView(
                     url: summary.coverURL,
@@ -1262,6 +1311,7 @@ struct GalleryRowView: View {
 struct GalleryDetailView: View {
     @ObservedObject var store: AppStore
     let galleryID: Int
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var info: GalleryInfo?
     @State private var coverURL: URL?
@@ -1422,6 +1472,7 @@ struct GalleryDetailView: View {
             }
             .padding()
         }
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle(info?.title ?? "Gallery \(galleryID)")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: galleryID) {
@@ -1631,6 +1682,7 @@ struct DetailSearchOverlayView: View {
     let request: DetailSearchOverlayRequest
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var summaries: [GallerySummary] = []
     @State private var isLoading = true
@@ -1673,6 +1725,8 @@ struct DetailSearchOverlayView: View {
                 .listStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle(request.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -1729,7 +1783,7 @@ struct ReaderWorkspaceView: View {
                 )
             }
         }
-        .background(Color.black.opacity(0.95))
+        .background(Color.black)
         .onChange(of: store.selectedReaderTabID) { _, _ in
             if !store.hasReaderTabs {
                 return
@@ -1762,7 +1816,7 @@ struct ReaderTabStripView: View {
             .padding(.horizontal)
             .padding(.vertical, 10)
         }
-        .background(Color.black.opacity(0.92))
+        .background(Color.black)
     }
 }
 
@@ -2064,7 +2118,7 @@ struct PagedReaderView: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .automatic))
-        .background(Color.black.opacity(0.95))
+        .background(Color.black)
         .scaleEffect(x: rightToLeft ? -1 : 1, y: 1)
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -2086,7 +2140,7 @@ struct PagedReaderPageView: View {
         )
         .frame(maxWidth: .infinity, minHeight: viewportSize.height)
         .padding(.vertical, 20)
-        .background(Color.black.opacity(0.95))
+        .background(Color.black)
     }
 }
 
@@ -2108,7 +2162,7 @@ struct VerticalReaderView: View {
             loadOrder: loadOrder,
             onToggleChrome: onToggleChrome
         )
-        .background(Color.black.opacity(0.95))
+        .background(Color.black)
     }
 }
 
@@ -2305,7 +2359,7 @@ struct ZoomableVerticalReaderScrollView: UIViewRepresentable {
                     imageView.image = cachedImage
                     imageView.backgroundColor = .clear
                 } else {
-                    imageView.backgroundColor = UIColor(white: 0.08, alpha: 1)
+                    imageView.backgroundColor = UIColor(white: 0.03, alpha: 1)
                 }
 
                 container.addSubview(imageView)
@@ -2377,7 +2431,7 @@ struct ZoomableVerticalReaderScrollView: UIViewRepresentable {
                                 return
                             }
 
-                            self.imageViews[index].backgroundColor = UIColor(white: 0.08, alpha: 1)
+                            self.imageViews[index].backgroundColor = UIColor(white: 0.03, alpha: 1)
                         }
                     }
                 }
@@ -2437,7 +2491,7 @@ struct ZoomableVerticalReaderScrollView: UIViewRepresentable {
                         self.imageViews[priorityPage].image = loadedImage
                         self.imageViews[priorityPage].backgroundColor = .clear
                     } else {
-                        self.imageViews[priorityPage].backgroundColor = UIColor(white: 0.08, alpha: 1)
+                        self.imageViews[priorityPage].backgroundColor = UIColor(white: 0.03, alpha: 1)
                     }
 
                     self.priorityLoadingPageID = nil
@@ -2543,7 +2597,7 @@ struct ZoomableReaderImage: View {
         .clipped()
         .contentShape(Rectangle())
         .frame(height: safeContainerHeight)
-        .background(Color.black.opacity(0.95))
+        .background(Color.black)
         .onChange(of: page.id) { _, _ in
             settledScale = 1
             settledOffset = .zero
@@ -2608,6 +2662,7 @@ struct ZoomableReaderImage: View {
 struct SettingsView: View {
     @ObservedObject var store: AppStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isExportingFavorites = false
     @State private var isImportingFavorites = false
     @State private var pendingDataResetAction: PendingDataResetAction?
@@ -2839,6 +2894,8 @@ struct SettingsView: View {
                 }
             }
         }
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Settings")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -2975,6 +3032,7 @@ private enum PendingDataResetAction: String, Identifiable {
 
 struct OpenGallerySheet: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     let onOpen: (Int) -> Void
 
@@ -2986,6 +3044,8 @@ struct OpenGallerySheet: View {
                 TextField("Gallery ID", text: $galleryIDText)
                     .keyboardType(.numberPad)
             }
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+            .background(colorScheme == .dark ? Color.black : Color.clear)
             .navigationTitle("Open by ID")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -3019,6 +3079,7 @@ struct IntegerInputSheet: View {
     let onSubmit: (Int) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var valueText = ""
 
     var body: some View {
@@ -3033,6 +3094,8 @@ struct IntegerInputSheet: View {
                         .keyboardType(.numberPad)
                 }
             }
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+            .background(colorScheme == .dark ? Color.black : Color.clear)
             .navigationTitle(title)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -3061,6 +3124,7 @@ struct RemoteImageView: View {
     let contentMode: ContentMode
     let expandsToContainer: Bool
 
+    @Environment(\.colorScheme) private var colorScheme
     @State private var phase: Phase = .loading
 
     private let service = HitomiService.shared
@@ -3091,7 +3155,7 @@ struct RemoteImageView: View {
             switch phase {
             case .loading:
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.secondary.opacity(0.12))
+                    .fill(colorScheme == .dark ? Color(white: 0.06) : Color.secondary.opacity(0.12))
                     .overlay {
                         ProgressView()
                     }
@@ -3110,7 +3174,7 @@ struct RemoteImageView: View {
 
             case .failure:
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.secondary.opacity(0.12))
+                    .fill(colorScheme == .dark ? Color(white: 0.06) : Color.secondary.opacity(0.12))
                     .overlay {
                         Image(systemName: "photo")
                             .font(.title2)

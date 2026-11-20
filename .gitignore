@@ -16,4 +16,11 @@
 local.properties
 *Favorites.json
 /d.txt
-/pupil/app/release/
+/umtomi/app/release/
+/artifacts/
+/build-codex/
+**/.build-*/
+**/.kotlin/
+**/.cxx/
+*.log
+/umtomi/ios/DriveSync.local.xcconfig

@@ -412,6 +412,7 @@ private struct ShelfThumbnail: View {
 struct BookshelfView: View {
     @ObservedObject var library: BookshelfLibrary
     let store: AppStore
+    @Environment(\.colorScheme) private var colorScheme
     @State private var importing = false
     @State private var naming = false
     @State private var renaming = false
@@ -439,6 +440,7 @@ struct BookshelfView: View {
             wall
         }
         .padding(.horizontal, 12)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Bookshelf")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -576,6 +578,7 @@ struct BookshelfView: View {
 
 struct ShelfFolderPicker: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var library: BookshelfLibrary
     let title: LocalizedStringKey
     var selectedID: UUID? = nil
@@ -593,6 +596,8 @@ struct ShelfFolderPicker: View {
                 }
                 if let createFolder { Button("New shelf", systemImage: "folder.badge.plus", action: createFolder) }
             }
+            .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+            .background(colorScheme == .dark ? Color.black : Color.clear)
             .navigationTitle(title)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
         }

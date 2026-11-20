@@ -1,0 +1,10 @@
+<resources>
+    <color name="workspace_background">#F3F5F9</color>
+    <color name="workspace_bar">#FFFFFF</color>
+    <color name="workspace_surface">#FFFFFF</color>
+    <color name="workspace_text">#121722</color>
+    <color name="workspace_muted">#566478</color>
+    <color name="workspace_accent">#1761C6</color>
+    <color name="workspace_selected">#DFEBFF</color>
+    <color name="workspace_divider">#DCE2EC</color>
+</resources>

@@ -1,0 +1,6 @@
+<resources>
+    <color name="bookshelf_selected">#132B4D</color>
+    <color name="browser_overview">#000000</color>
+    <color name="browser_on_surface">#FFFFFF</color>
+    <color name="browser_overview_control">#121216</color>
+</resources>

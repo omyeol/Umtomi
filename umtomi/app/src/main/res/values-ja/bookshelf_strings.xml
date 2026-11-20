@@ -1,0 +1,30 @@
+<resources>
+<string name="back">戻る</string>
+<string name="bookshelf">本棚</string>
+<string name="bookshelf_add_images">画像を追加</string>
+<string name="bookshelf_adding_images">画像を追加中…</string>
+<string name="bookshelf_column_value">%1$d列</string>
+<string name="bookshelf_delete_folder">本棚を削除</string>
+<string name="bookshelf_delete_folder_message">「%1$s」と%2$d枚の画像を削除しますか？元に戻せません。</string>
+<string name="bookshelf_delete_image">画像を削除</string>
+<string name="bookshelf_delete_image_message">本棚からこの画像を削除しますか？</string>
+<string name="bookshelf_exit_fullscreen">全画面を終了</string>
+<string name="bookshelf_export_pdf">PDFを書き出す</string>
+<string name="bookshelf_folder_name">本棚の名前</string>
+<string name="bookshelf_folder_name_invalid">この名前は使用中か無効です。</string>
+<string name="bookshelf_fullscreen">全画面</string>
+<string name="bookshelf_images_added">%1$d枚の画像を追加しました</string>
+<string name="bookshelf_pdf_creating">PDFを作成中…</string>
+<string name="bookshelf_pdf_failed">PDFを書き出せませんでした</string>
+<string name="bookshelf_pdf_landscape">横16:9 · モニター向け</string>
+<string name="bookshelf_pdf_orientation_title">PDFのページ比率</string>
+<string name="bookshelf_pdf_portrait">縦9:16 · スマートフォン向け</string>
+<string name="bookshelf_pdf_saved">PDFを保存しました</string>
+<string name="bookshelf_rename_folder">本棚の名前を変更</string>
+<string name="delete">削除</string>
+<string name="new_bookshelf_folder">新しい本棚</string>
+<string name="bookshelf_note">本棚のメモ</string>
+<string name="bookshelf_files">ファイルを選択</string>
+<string name="bookshelf_paste">画像を貼り付け</string>
+<string name="bookshelf_clipboard_empty">クリップボードに画像がありません</string>
+</resources>

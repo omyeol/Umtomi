@@ -1,0 +1,20 @@
+<resources>
+<string name="favorites_new_folder">Folder baru</string>
+<string name="favorites_add_ids">Tambah ID karya</string>
+<string name="favorites_choose_existing">Atur favorit yang ada</string>
+<string name="favorites_export">Ekspor berkas JSON</string>
+<string name="favorites_import">Impor berkas JSON</string>
+<string name="favorites_all">Semua favorit</string>
+<string name="favorites_parent">Ke atas</string>
+<string name="favorites_folder_empty">Belum ada favorit. Tambahkan dari menu.</string>
+<string name="favorites_rename">Ubah nama folder</string>
+<string name="favorites_delete_folder_message">Hapus folder dan subfolder? Karya tetap ada di Semua favorit.</string>
+<string name="favorites_select_folder">Buka folder terlebih dahulu.</string>
+<string name="favorites_assign">Pilih folder</string>
+<string name="favorites_details">Detail karya</string>
+<string name="favorites_remove">Hapus favorit</string>
+<string name="favorites_remove_message">Hapus karya dari favorit dan semua folder?</string>
+<string name="favorites_create_first">Buat folder terlebih dahulu.</string>
+<string name="favorites_export_done">JSON favorit disimpan</string>
+<string name="favorites_import_done">Mengimpor %1$d favorit</string>
+</resources>

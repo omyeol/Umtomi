@@ -1,0 +1,30 @@
+<resources>
+<string name="back">Kembali</string>
+<string name="bookshelf">Rak buku</string>
+<string name="bookshelf_add_images">Tambah gambar</string>
+<string name="bookshelf_adding_images">Menambahkan gambar…</string>
+<string name="bookshelf_column_value">%1$d kolom</string>
+<string name="bookshelf_delete_folder">Hapus rak buku</string>
+<string name="bookshelf_delete_folder_message">Hapus “%1$s” dan %2$d gambarnya? Tidak dapat dibatalkan.</string>
+<string name="bookshelf_delete_image">Hapus gambar</string>
+<string name="bookshelf_delete_image_message">Hapus gambar ini dari rak buku?</string>
+<string name="bookshelf_exit_fullscreen">Keluar layar penuh</string>
+<string name="bookshelf_export_pdf">Ekspor PDF</string>
+<string name="bookshelf_folder_name">Nama rak</string>
+<string name="bookshelf_folder_name_invalid">Nama sudah digunakan atau tidak valid.</string>
+<string name="bookshelf_fullscreen">Layar penuh</string>
+<string name="bookshelf_images_added">%1$d gambar ditambahkan</string>
+<string name="bookshelf_pdf_creating">Membuat PDF…</string>
+<string name="bookshelf_pdf_failed">Tidak dapat mengekspor PDF</string>
+<string name="bookshelf_pdf_landscape">Lanskap 16:9</string>
+<string name="bookshelf_pdf_orientation_title">Rasio halaman PDF</string>
+<string name="bookshelf_pdf_portrait">Potret 9:16</string>
+<string name="bookshelf_pdf_saved">PDF disimpan</string>
+<string name="bookshelf_rename_folder">Ubah nama rak</string>
+<string name="delete">Hapus</string>
+<string name="new_bookshelf_folder">Rak baru</string>
+<string name="bookshelf_note">Catatan rak</string>
+<string name="bookshelf_files">Pilih berkas</string>
+<string name="bookshelf_paste">Tempel gambar</string>
+<string name="bookshelf_clipboard_empty">Tidak ada gambar di papan klip</string>
+</resources>

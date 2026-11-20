@@ -1,0 +1,20 @@
+<resources>
+<string name="favorites_new_folder">新しいフォルダ</string>
+<string name="favorites_add_ids">作品IDを追加</string>
+<string name="favorites_choose_existing">既存のお気に入りを整理</string>
+<string name="favorites_export">JSONファイルを書き出す</string>
+<string name="favorites_import">JSONファイルを読み込む</string>
+<string name="favorites_all">すべてのお気に入り</string>
+<string name="favorites_parent">親フォルダ</string>
+<string name="favorites_folder_empty">お気に入りがありません。メニューから追加してください。</string>
+<string name="favorites_rename">フォルダ名を変更</string>
+<string name="favorites_delete_folder_message">このフォルダと子フォルダを削除しますか？作品はすべてのお気に入りに残ります。</string>
+<string name="favorites_select_folder">先にフォルダを開いてください。</string>
+<string name="favorites_assign">フォルダを選択</string>
+<string name="favorites_details">作品情報</string>
+<string name="favorites_remove">お気に入りから削除</string>
+<string name="favorites_remove_message">この作品をお気に入りとすべてのフォルダから削除しますか？</string>
+<string name="favorites_create_first">先にフォルダを作成してください。</string>
+<string name="favorites_export_done">JSONを保存しました</string>
+<string name="favorites_import_done">%1$d件のお気に入りを読み込みました</string>
+</resources>

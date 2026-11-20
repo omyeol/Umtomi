@@ -1,0 +1,14 @@
+<resources>
+    <string name="updater_open">Pembaruan aplikasi</string>
+    <string name="updater_releases">Lihat rilis GitHub</string>
+    <string name="updater_permission">Izinkan Umtomi memasang aplikasi, lalu kembali.</string>
+    <string name="updater_checking">Memeriksa pembaruan di GitHub…</string>
+    <string name="updater_check">Periksa lagi</string>
+    <string name="updater_current">Tidak ada APK Android yang lebih baru.</string>
+    <string name="updater_download">Unduh pembaruan</string>
+    <string name="updater_download_failed">Unduhan gagal atau dihapus. Coba lagi.</string>
+    <string name="updater_ready">Unduhan selesai. Ketuk Pasang pembaruan.</string>
+    <string name="updater_install">Pasang pembaruan</string>
+    <string name="updater_invalid">APK ini bukan versi Umtomi baru dengan paket dan tanda tangan yang sama.</string>
+    <string name="updater_error">Pembaruan tidak dapat diselesaikan.\n%1$s</string>
+</resources>

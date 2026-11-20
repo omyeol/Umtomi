@@ -1,0 +1,7 @@
+<resources>
+    <string name="reader_return">返回列表</string>
+    <string name="reader_previous_page">上一頁</string>
+    <string name="reader_next_page">下一頁</string>
+    <string name="reader_tools">閱讀工具</string>
+    <string name="reader_favorite_label">收藏</string>
+</resources>

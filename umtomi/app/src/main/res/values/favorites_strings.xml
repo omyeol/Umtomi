@@ -1,0 +1,20 @@
+<resources>
+<string name="favorites_new_folder">New folder</string>
+<string name="favorites_add_ids">Add gallery IDs</string>
+<string name="favorites_choose_existing">Organize existing favorites</string>
+<string name="favorites_export">Export JSON file</string>
+<string name="favorites_import">Import JSON file</string>
+<string name="favorites_all">All favorites</string>
+<string name="favorites_parent">Up</string>
+<string name="favorites_folder_empty">No favorites here. Add works using the menu.</string>
+<string name="favorites_rename">Rename folder</string>
+<string name="favorites_delete_folder_message">Delete this folder and its subfolders? Works will remain in All favorites.</string>
+<string name="favorites_select_folder">Open a folder first.</string>
+<string name="favorites_assign">Choose folders</string>
+<string name="favorites_details">Gallery details</string>
+<string name="favorites_remove">Remove favorite</string>
+<string name="favorites_remove_message">Remove this work from favorites and all folders?</string>
+<string name="favorites_create_first">Create a folder first.</string>
+<string name="favorites_export_done">Favorites JSON saved</string>
+<string name="favorites_import_done">Imported %1$d favorites</string>
+</resources>

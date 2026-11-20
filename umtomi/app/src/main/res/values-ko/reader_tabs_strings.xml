@@ -1,0 +1,6 @@
+<resources>
+    <string name="reader_new_tab">새 탭</string>
+    <string name="reader_gallery_id">작품 ID</string>
+    <string name="reader_close_tab">%1$s 탭 닫기</string>
+    <string name="reader_background_tab_added">백그라운드 탭에 추가했습니다</string>
+</resources>

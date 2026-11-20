@@ -1,0 +1,33 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="workspace_search">Search</string>
+    <string name="workspace_recommendations">For You</string>
+    <string name="workspace_more">More</string>
+    <string name="workspace_actions">App actions</string>
+    <string name="workspace_tab_settings">Tab bar settings</string>
+    <string name="workspace_enable_more">Show More tab</string>
+    <string name="workspace_on_tab_bar">Tab bar</string>
+    <string name="workspace_in_more">In More</string>
+    <string name="workspace_move_to_more">Move to More</string>
+    <string name="workspace_move_to_bar">Move to tab bar</string>
+    <string name="workspace_move_up">Move up</string>
+    <string name="workspace_move_down">Move down</string>
+    <string name="workspace_tab_editor_hint">Drag the handle to reorder tabs, or use the buttons to move between the bar and More.</string>
+    <string name="workspace_tab_preview">Preview</string>
+    <string name="workspace_tab_reset">Reset</string>
+    <string name="workspace_more_empty">Tabs moved here appear in the More menu.</string>
+    <string name="workspace_no_recommendations">Open or favorite a gallery to get recommendations.</string>
+    <string name="workspace_drive_sync">Google Drive sync</string>
+    <string name="workspace_favorite_artists">Favorite artists</string>
+    <string name="workspace_add_artist">Add artist</string>
+    <string name="workspace_favorite_rule">Auto sorting rule</string>
+    <string name="workspace_favorite_rule_help">Enter a search to include matching favorites automatically. Leave it empty to turn the rule off.</string>
+    <string name="workspace_favorite_rule_loading">Checking matching favorites…</string>
+    <string name="workspace_favorite_rule_failed">Could not load the automatic favorites.</string>
+    <string name="workspace_drive_background">Background bookshelf sync</string>
+    <string name="workspace_drive_notifications">Sync progress notifications</string>
+    <string name="workspace_drive_allow_notifications">Allow app notifications to see progress.</string>
+    <string name="workspace_drive_checking">Checking Google Drive</string>
+    <string name="workspace_drive_reconnect">Reconnect your Google account to resume sync.</string>
+    <string name="workspace_drive_complete">Sync complete</string>
+    <string name="workspace_drive_retry">Sync interrupted. Try again later.</string>
+</resources>

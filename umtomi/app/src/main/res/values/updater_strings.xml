@@ -1,0 +1,15 @@
+<resources>
+    <string name="updater_open">App update</string>
+    <string name="updater_releases">GitHub releases</string>
+    <string name="updater_permission">Allow Umtomi to install apps, then return here.</string>
+    <string name="updater_checking">Checking GitHub for updates…</string>
+    <string name="updater_check">Check again</string>
+    <string name="updater_current">No newer Android APK is available.</string>
+    <string name="updater_download">Download update</string>
+    <string name="updater_download_failed">Download failed or was removed. Please retry.</string>
+    <string name="updater_ready">Download complete. Tap Install update to continue.</string>
+    <string name="updater_install">Install update</string>
+    <string name="updater_invalid">This APK is not a newer Umtomi version with the same package and signing certificate.</string>
+    <string name="updater_error">Update could not be completed.
+%1$s</string>
+</resources>

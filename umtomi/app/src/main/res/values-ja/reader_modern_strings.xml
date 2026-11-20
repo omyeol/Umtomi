@@ -1,0 +1,7 @@
+<resources>
+    <string name="reader_return">一覧へ戻る</string>
+    <string name="reader_previous_page">前のページ</string>
+    <string name="reader_next_page">次のページ</string>
+    <string name="reader_tools">ビューアのツール</string>
+    <string name="reader_favorite_label">お気に入り</string>
+</resources>

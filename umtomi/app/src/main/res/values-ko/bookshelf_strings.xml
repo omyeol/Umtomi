@@ -1,0 +1,30 @@
+<resources>
+<string name="back">뒤로</string>
+<string name="bookshelf">책장</string>
+<string name="bookshelf_add_images">사진 추가</string>
+<string name="bookshelf_adding_images">사진을 추가하는 중…</string>
+<string name="bookshelf_column_value">%1$d열</string>
+<string name="bookshelf_delete_folder">책장 삭제</string>
+<string name="bookshelf_delete_folder_message">“%1$s” 책장과 사진 %2$d장을 삭제할까요? 되돌릴 수 없습니다.</string>
+<string name="bookshelf_delete_image">사진 삭제</string>
+<string name="bookshelf_delete_image_message">책장에서 이 사진을 삭제할까요?</string>
+<string name="bookshelf_exit_fullscreen">전체 화면 종료</string>
+<string name="bookshelf_export_pdf">PDF 내보내기</string>
+<string name="bookshelf_folder_name">책장 이름</string>
+<string name="bookshelf_folder_name_invalid">이미 사용 중이거나 올바르지 않은 이름입니다.</string>
+<string name="bookshelf_fullscreen">전체 화면</string>
+<string name="bookshelf_images_added">사진 %1$d장을 추가했습니다</string>
+<string name="bookshelf_pdf_creating">책장 PDF를 만드는 중…</string>
+<string name="bookshelf_pdf_failed">PDF를 내보내지 못했습니다</string>
+<string name="bookshelf_pdf_landscape">가로 16:9 · 모니터와 가로 읽기</string>
+<string name="bookshelf_pdf_orientation_title">PDF 페이지 비율</string>
+<string name="bookshelf_pdf_portrait">세로 9:16 · 휴대폰과 세로 읽기</string>
+<string name="bookshelf_pdf_saved">책장 PDF를 저장했습니다</string>
+<string name="bookshelf_rename_folder">책장 이름 변경</string>
+<string name="delete">삭제</string>
+<string name="new_bookshelf_folder">새 책장</string>
+<string name="bookshelf_note">책장 메모</string>
+<string name="bookshelf_files">파일 선택</string>
+<string name="bookshelf_paste">사진 붙여넣기</string>
+<string name="bookshelf_clipboard_empty">클립보드에 사진이 없습니다</string>
+</resources>

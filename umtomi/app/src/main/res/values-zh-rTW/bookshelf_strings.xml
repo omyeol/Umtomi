@@ -1,0 +1,30 @@
+<resources>
+<string name="back">返回</string>
+<string name="bookshelf">書架</string>
+<string name="bookshelf_add_images">新增圖片</string>
+<string name="bookshelf_adding_images">正在新增圖片…</string>
+<string name="bookshelf_column_value">%1$d欄</string>
+<string name="bookshelf_delete_folder">刪除書架</string>
+<string name="bookshelf_delete_folder_message">要刪除「%1$s」及其中的%2$d張圖片嗎？此操作無法復原。</string>
+<string name="bookshelf_delete_image">刪除圖片</string>
+<string name="bookshelf_delete_image_message">要從書架刪除此圖片嗎？</string>
+<string name="bookshelf_exit_fullscreen">離開全螢幕</string>
+<string name="bookshelf_export_pdf">匯出PDF</string>
+<string name="bookshelf_folder_name">書架名稱</string>
+<string name="bookshelf_folder_name_invalid">名稱已被使用或無效。</string>
+<string name="bookshelf_fullscreen">全螢幕</string>
+<string name="bookshelf_images_added">已新增%1$d張圖片</string>
+<string name="bookshelf_pdf_creating">正在建立PDF…</string>
+<string name="bookshelf_pdf_failed">無法匯出PDF</string>
+<string name="bookshelf_pdf_landscape">橫向16:9</string>
+<string name="bookshelf_pdf_orientation_title">PDF頁面比例</string>
+<string name="bookshelf_pdf_portrait">直向9:16</string>
+<string name="bookshelf_pdf_saved">PDF已儲存</string>
+<string name="bookshelf_rename_folder">重新命名書架</string>
+<string name="delete">刪除</string>
+<string name="new_bookshelf_folder">新增書架</string>
+<string name="bookshelf_note">書架筆記</string>
+<string name="bookshelf_files">選擇檔案</string>
+<string name="bookshelf_paste">貼上圖片</string>
+<string name="bookshelf_clipboard_empty">剪貼簿中沒有圖片</string>
+</resources>

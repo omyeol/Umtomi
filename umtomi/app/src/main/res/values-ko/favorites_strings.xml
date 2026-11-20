@@ -1,0 +1,20 @@
+<resources>
+<string name="favorites_new_folder">새 폴더</string>
+<string name="favorites_add_ids">작품 ID 추가</string>
+<string name="favorites_choose_existing">기존 즐겨찾기 정리</string>
+<string name="favorites_export">JSON 파일로 내보내기</string>
+<string name="favorites_import">JSON 파일 가져오기</string>
+<string name="favorites_all">전체 즐겨찾기</string>
+<string name="favorites_parent">상위 폴더</string>
+<string name="favorites_folder_empty">즐겨찾기가 없습니다. 메뉴에서 작품을 추가하세요.</string>
+<string name="favorites_rename">폴더 이름 변경</string>
+<string name="favorites_delete_folder_message">이 폴더와 하위 폴더를 삭제할까요? 작품은 전체 즐겨찾기에 남습니다.</string>
+<string name="favorites_select_folder">먼저 폴더를 여세요.</string>
+<string name="favorites_assign">폴더 지정</string>
+<string name="favorites_details">작품 정보</string>
+<string name="favorites_remove">즐겨찾기 해제</string>
+<string name="favorites_remove_message">이 작품을 즐겨찾기와 모든 폴더에서 뺄까요?</string>
+<string name="favorites_create_first">먼저 폴더를 만드세요.</string>
+<string name="favorites_export_done">즐겨찾기 JSON을 저장했습니다</string>
+<string name="favorites_import_done">즐겨찾기 %1$d개를 가져왔습니다</string>
+</resources>

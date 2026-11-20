@@ -1,0 +1,20 @@
+<resources>
+<string name="favorites_new_folder">新增資料夾</string>
+<string name="favorites_add_ids">新增作品ID</string>
+<string name="favorites_choose_existing">整理現有收藏</string>
+<string name="favorites_export">匯出JSON檔案</string>
+<string name="favorites_import">匯入JSON檔案</string>
+<string name="favorites_all">全部收藏</string>
+<string name="favorites_parent">上一層</string>
+<string name="favorites_folder_empty">沒有收藏。請從選單新增作品。</string>
+<string name="favorites_rename">重新命名資料夾</string>
+<string name="favorites_delete_folder_message">刪除此資料夾及子資料夾？作品將保留在全部收藏。</string>
+<string name="favorites_select_folder">請先開啟資料夾。</string>
+<string name="favorites_assign">指定資料夾</string>
+<string name="favorites_details">作品資訊</string>
+<string name="favorites_remove">移除收藏</string>
+<string name="favorites_remove_message">從收藏和所有資料夾移除此作品？</string>
+<string name="favorites_create_first">請先建立資料夾。</string>
+<string name="favorites_export_done">已儲存收藏JSON</string>
+<string name="favorites_import_done">已匯入%1$d個收藏</string>
+</resources>

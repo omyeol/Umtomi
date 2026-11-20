@@ -1,0 +1,44 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="NoActionBarAppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="ReaderTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/reader_surface</item>
+        <item name="colorPrimaryDark">@color/reader_canvas</item>
+        <item name="colorAccent">@color/reader_accent</item>
+        <item name="colorSecondary">@color/reader_accent</item>
+        <item name="colorSurface">@color/reader_surface</item>
+        <item name="colorOnSurface">@color/reader_text</item>
+        <item name="android:textColorPrimary">@color/reader_text</item>
+        <item name="android:textColorSecondary">@color/reader_muted</item>
+        <item name="android:colorBackground">@color/reader_surface</item>
+        <item name="colorControlNormal">@color/reader_muted</item>
+        <item name="android:windowBackground">@color/reader_canvas</item>
+        <item name="android:statusBarColor">@color/reader_surface</item>
+        <item name="android:navigationBarColor">@color/reader_surface</item>
+    </style>
+    <style name="ReaderIconButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:minWidth">48dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconTint">@color/reader_text</item>
+        <item name="rippleColor">#33A5E8D0</item>
+    </style>
+</resources>

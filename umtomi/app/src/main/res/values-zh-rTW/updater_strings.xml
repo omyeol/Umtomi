@@ -1,0 +1,14 @@
+<resources>
+    <string name="updater_open">應用程式更新</string>
+    <string name="updater_releases">查看 GitHub 發行版本</string>
+    <string name="updater_permission">請允許 Umtomi 安裝應用程式，然後返回。</string>
+    <string name="updater_checking">正在 GitHub 檢查更新…</string>
+    <string name="updater_check">再次檢查</string>
+    <string name="updater_current">目前沒有更新的 Android APK。</string>
+    <string name="updater_download">下載更新</string>
+    <string name="updater_download_failed">下載失敗或已被刪除，請重試。</string>
+    <string name="updater_ready">下載完成，請點選安裝更新。</string>
+    <string name="updater_install">安裝更新</string>
+    <string name="updater_invalid">此 APK 並非套件名稱與簽章相符的新版 Umtomi。</string>
+    <string name="updater_error">無法完成更新。\n%1$s</string>
+</resources>

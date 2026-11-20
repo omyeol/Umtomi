@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 @MainActor
 struct ReaderCaptureView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var library: BookshelfLibrary
     let pages: [ReaderPage]
     let start: Int
@@ -82,6 +83,7 @@ struct ReaderCaptureView: View {
                 }
                 .padding()
             }
+            .background(colorScheme == .dark ? Color.black : Color.clear)
             .navigationTitle("Reader capture")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }

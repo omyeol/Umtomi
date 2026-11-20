@@ -4,6 +4,7 @@ import UIKit
 @MainActor
 struct DriveSyncSettings: View {
     let store: AppStore
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var sync = DriveSyncCoordinator.shared
     @AppStorage(DriveSyncCoordinator.backgroundKey) private var background = false
     @AppStorage(DriveSyncCoordinator.onDemandKey) private var onDemand = false
@@ -78,6 +79,8 @@ struct DriveSyncSettings: View {
                 Text("일반 동기화와 예약된 백그라운드 동기화의 진행률과 결과를 알림으로 표시합니다.")
             }
         }
+        .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
+        .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Google Drive 동기화")
     }
 

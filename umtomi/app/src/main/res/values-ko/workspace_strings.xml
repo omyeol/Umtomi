@@ -1,0 +1,33 @@
+<resources>
+    <string name="workspace_search">검색</string>
+    <string name="workspace_recommendations">추천</string>
+    <string name="workspace_more">더 보기</string>
+    <string name="workspace_actions">앱 메뉴</string>
+    <string name="workspace_tab_settings">하단 탭 바 설정</string>
+    <string name="workspace_enable_more">더 보기 항목 켜기</string>
+    <string name="workspace_on_tab_bar">탭 바</string>
+    <string name="workspace_in_more">더 보기 항목</string>
+    <string name="workspace_move_to_more">더 보기로</string>
+    <string name="workspace_move_to_bar">탭 바로</string>
+    <string name="workspace_move_up">위로</string>
+    <string name="workspace_move_down">아래로</string>
+    <string name="workspace_tab_editor_hint">핸들을 끌어 순서를 바꾸거나 버튼으로 탭 바·더 보기를 이동하세요.</string>
+    <string name="workspace_tab_preview">미리 보기</string>
+    <string name="workspace_tab_reset">초기화</string>
+    <string name="workspace_more_empty">여기로 옮긴 탭은 더 보기 메뉴에 표시됩니다.</string>
+    <string name="workspace_no_recommendations">작품을 열거나 즐겨찾기에 추가하면 추천을 볼 수 있습니다.</string>
+    <string name="workspace_drive_sync">Google Drive 동기화</string>
+    <string name="workspace_favorite_artists">즐겨찾는 작가</string>
+    <string name="workspace_add_artist">작가 추가</string>
+    <string name="workspace_favorite_rule">자동 분류 규칙</string>
+    <string name="workspace_favorite_rule_help">검색 조건에 맞는 즐겨찾기를 자동으로 이 폴더에 표시합니다. 비워 두면 자동 분류를 끕니다.</string>
+    <string name="workspace_favorite_rule_loading">조건에 맞는 즐겨찾기를 확인하는 중…</string>
+    <string name="workspace_favorite_rule_failed">자동 분류 결과를 불러오지 못했습니다.</string>
+    <string name="workspace_drive_background">백그라운드 책장 동기화</string>
+    <string name="workspace_drive_notifications">동기화 진행 알림</string>
+    <string name="workspace_drive_allow_notifications">진행률을 보려면 기기 설정에서 앱 알림을 허용해 주세요.</string>
+    <string name="workspace_drive_checking">Google Drive 연결 확인 중</string>
+    <string name="workspace_drive_reconnect">동기화를 계속하려면 Google 계정을 다시 연결해 주세요.</string>
+    <string name="workspace_drive_complete">동기화 완료</string>
+    <string name="workspace_drive_retry">동기화가 중단되었습니다. 잠시 뒤 다시 시도해 주세요.</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="reader_return">목록으로 돌아가기</string>
+    <string name="reader_previous_page">이전 페이지</string>
+    <string name="reader_next_page">다음 페이지</string>
+    <string name="reader_tools">뷰어 도구</string>
+    <string name="reader_favorite_label">즐겨찾기</string>
+</resources>
