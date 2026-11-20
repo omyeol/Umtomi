@@ -1,0 +1,52 @@
+name: Build Umtomi iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'umtomi/ios/**'
+      - '.github/workflows/ios-ipa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null; then
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+          fi
+          bash umtomi/ios/build-ipa.sh --check
+      - name: Build unsigned IPA
+        run: bash umtomi/ios/build-ipa.sh --no-icloud
+      - name: Verify app bundle and make checksum
+        working-directory: umtomi/ios/build
+        run: |
+          unzip -tq Umtomi-unsigned.ipa
+          executable="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' Payload/Umtomi.app/Info.plist)"
+          test -x "Payload/Umtomi.app/$executable"
+          bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Payload/Umtomi.app/Info.plist)"
+          test "$bundle_id" = "xyz.sabok.umtomi"
+          shasum -a 256 Umtomi-unsigned.ipa > SHA256SUMS.txt
+      - name: Save IPA
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: Umtomi-iOS-unsigned-${{ github.run_number }}
+          path: |
+            umtomi/ios/build/Umtomi-unsigned.ipa
+            umtomi/ios/build/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
