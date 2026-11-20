@@ -55,7 +55,7 @@ build_unsigned_ipa() {
         clean build \
         CODE_SIGNING_ALLOWED=NO \
         CODE_SIGNING_REQUIRED=NO \
-        CODE_SIGN_IDENTITY="" >&2
+        CODE_SIGN_IDENTITY="" >&2 || return $?
 
     local app_path
     app_path="$(find "$DERIVED_DATA_PATH/Build/Products" -maxdepth 2 -type d -name '*.app' | head -n 1)"

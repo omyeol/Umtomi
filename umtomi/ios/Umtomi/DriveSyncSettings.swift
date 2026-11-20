@@ -28,7 +28,7 @@ struct DriveSyncSettings: View {
                     Button("Google 계정 연결") {
                         Task {
                             await sync.connect()
-                            if enabled { await sync.sync(store: store) }
+                            if enabled { _ = await sync.sync(store: store) }
                         }
                     }
                     .disabled(sync.busy)

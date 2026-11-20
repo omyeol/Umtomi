@@ -66,6 +66,10 @@ struct DriveKeyRing {
     private var legacy = [String]()
     var isEmpty: Bool { keys.isEmpty }
 
+    init(format: String) {
+        self.format = format
+    }
+
     mutating func add(_ record: SyncObject, id: String, recordFormat: String) throws {
         guard record["format"] as? String == recordFormat,
               record["version"] as? Int == 1,
