@@ -132,6 +132,13 @@
     <string name="port_drive_local">Save locally</string>
     <string name="port_drive_on_demand">Load on demand from Drive</string>
     <string name="port_drive_image_mode">Bookshelf photo storage</string>
+    <string name="port_fav_sort">Sort Favorites</string>
+    <string name="port_fav_sort_added">Date Favorited</string>
+    <string name="port_fav_sort_upload">Upload Order</string>
+    <string name="port_fav_sort_name">Name</string>
+    <string name="port_fav_sort_desc">Descending</string>
+    <string name="port_fav_sort_asc">Ascending</string>
+    <string name="port_close">Close</string>
 </resources>
 
 

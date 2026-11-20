@@ -193,3 +193,11 @@
 "Lock now" = "지금 잠그기";
 "Enter a number from 1 to 1440." = "1~1440 사이의 숫자를 입력해 주세요.";
 "The timer starts when you leave the app." = "앱을 백그라운드로 보내면 잠금 시간의 계산이 시작됩니다.";
+
+"Date Favorited" = "추가한 순";
+"Upload Order" = "업로드순";
+"Name" = "이름순";
+"Sort Direction" = "정렬 방향";
+"Ascending" = "오름차순";
+"Descending" = "내림차순";
+"Sort Favorites" = "즐겨찾기 정렬";

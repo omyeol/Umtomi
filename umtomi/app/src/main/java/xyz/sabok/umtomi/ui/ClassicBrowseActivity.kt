@@ -757,6 +757,10 @@ class ClassicBrowseActivity :
                 startActivity(Intent(this, BookshelfActivity::class.java))
                 return
             }
+            WorkspaceTab.SETTINGS -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                return
+            }
             WorkspaceTab.SEARCH -> Mode.SEARCH
             WorkspaceTab.RECOMMENDATIONS -> Mode.RECOMMENDATIONS
             WorkspaceTab.DOWNLOADS -> Mode.DOWNLOAD

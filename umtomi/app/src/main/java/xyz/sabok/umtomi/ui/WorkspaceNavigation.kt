@@ -21,7 +21,8 @@ internal enum class WorkspaceTab(val title: Int, val icon: Int) {
     DOWNLOADS(R.string.main_drawer_downloads, R.drawable.ic_download),
     HISTORY(R.string.main_drawer_history, R.drawable.history),
     FAVORITES(R.string.main_drawer_favorite, R.drawable.ic_star_filled),
-    BOOKSHELF(R.string.bookshelf, R.drawable.book_open)
+    BOOKSHELF(R.string.bookshelf, R.drawable.book_open),
+    SETTINGS(R.string.main_settings, android.R.drawable.ic_menu_preferences)
 }
 
 internal object WorkspaceTabConfig {
@@ -132,8 +133,10 @@ internal class WorkspaceNavigation(
             container.addView(View(activity).apply { setBackgroundColor(style.divider) },
                 LinearLayout.LayoutParams(-1, style.dp(1)).apply { topMargin = style.dp(8); bottomMargin = style.dp(8) })
         }
-        addMenuRow(R.string.main_settings, android.R.drawable.ic_menu_preferences) {
-            activity.startActivity(Intent(activity, SettingsActivity::class.java))
+        if (WorkspaceTab.SETTINGS !in entries) {
+            addMenuRow(R.string.main_settings, android.R.drawable.ic_menu_preferences) {
+                activity.startActivity(Intent(activity, SettingsActivity::class.java))
+            }
         }
         addMenuRow(R.string.workspace_tab_settings, R.drawable.swap_horizontal) { showSettings() }
 

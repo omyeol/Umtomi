@@ -1,5 +1,6 @@
 package xyz.sabok.umtomi.ui
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -22,12 +23,53 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import xyz.sabok.umtomi.R
 import xyz.sabok.umtomi.favorites
 import xyz.sabok.umtomi.hitomi.SortMode
 import xyz.sabok.umtomi.hitomi.doSearch
 import xyz.sabok.umtomi.util.FavoriteFolder
 import xyz.sabok.umtomi.util.FavoriteFolders
+import xyz.sabok.umtomi.util.Preferences
+import xyz.sabok.umtomi.util.downloader.Cache
+
+internal enum class FavoriteSortOrder { ADDED, UPLOAD, NAME }
+
+internal fun sortFavoriteGalleryIDs(
+    ids: List<Int>,
+    addedNewestFirst: List<Int>,
+    order: FavoriteSortOrder,
+    ascending: Boolean,
+    titlesByID: Map<Int, String> = emptyMap(),
+): List<Int> {
+    val addedIndex = HashMap<Int, Int>(addedNewestFirst.size)
+    addedNewestFirst.forEachIndexed { index, id -> addedIndex[id] = index }
+    return when (order) {
+        FavoriteSortOrder.ADDED -> ids.sortedWith { a, b ->
+            val ia = addedIndex[a] ?: Int.MAX_VALUE
+            val ib = addedIndex[b] ?: Int.MAX_VALUE
+            val cmp = ia.compareTo(ib)
+            val ordered = if (ascending) -cmp else cmp
+            if (ordered != 0) ordered else b.compareTo(a)
+        }
+        FavoriteSortOrder.UPLOAD -> ids.sortedWith { a, b ->
+            if (ascending) a.compareTo(b) else b.compareTo(a)
+        }
+        FavoriteSortOrder.NAME -> ids.sortedWith { a, b ->
+            val ta = titlesByID[a]
+            val tb = titlesByID[b]
+            val cmp = when {
+                ta != null && tb != null -> String.CASE_INSENSITIVE_ORDER.compare(ta, tb)
+                ta != null -> -1
+                tb != null -> 1
+                else -> 0
+            }
+            val ordered = if (cmp != 0) (if (ascending) cmp else -cmp) else (if (ascending) a.compareTo(b) else b.compareTo(a))
+            ordered
+        }
+    }
+}
 
 /** Android port of the iOS FavoritesView (Works/Artists switcher, nested folders, auto-rules). */
 internal class PortFavoritesView(
@@ -35,14 +77,60 @@ internal class PortFavoritesView(
     private val style: PortStyle,
     private val openGallery: (Int) -> Unit,
     private val galleryActions: (Int) -> Unit,
-    private val search: (String) -> Unit,
+    private val openArtistOverlay: (String, String) -> Unit,
     private val onTitleChanged: () -> Unit,
 ) {
     var currentFolderID: String? = null
     var showingArtists = false
     private var ruleJob: Job? = null
+    private var childRuleJob: Job? = null
+    private var nameSortJob: Job? = null
     private var container: LinearLayout? = null
-    private val autoMatchCache = mutableMapOf<String, Pair<String, List<Int>>>()
+    private val autoCachePrefs = activity.getSharedPreferences("port_favorite_auto_cache", Context.MODE_PRIVATE)
+    private data class AutoCacheEntry(val rule: String, val favoritesHash: String, val matched: List<Int>)
+    private val autoMatchCache = mutableMapOf<String, AutoCacheEntry>()
+
+    init {
+        loadPersistedAutoCache()
+    }
+
+    private fun favoritesSignature(allFavs: List<Int>): String =
+        if (allFavs.isEmpty()) "" else "${allFavs.size}:${allFavs.first()}:${allFavs.last()}:${allFavs.hashCode()}"
+
+    private fun loadPersistedAutoCache() {
+        for ((folderID, raw) in autoCachePrefs.all) {
+            val text = raw as? String ?: continue
+            runCatching {
+                val obj = JSONObject(text)
+                val rule = obj.optString("rule")
+                val hash = obj.optString("hash")
+                val arr = obj.optJSONArray("matched") ?: JSONArray()
+                val ids = (0 until arr.length()).mapNotNull { arr.optInt(it).takeIf { id -> id > 0 } }
+                autoMatchCache[folderID] = AutoCacheEntry(rule, hash, ids)
+            }
+        }
+    }
+
+    private fun saveAutoCacheEntry(folderID: String, entry: AutoCacheEntry) {
+        autoMatchCache[folderID] = entry
+        val json = JSONObject().put("rule", entry.rule).put("hash", entry.favoritesHash).put("matched", JSONArray(entry.matched)).toString()
+        autoCachePrefs.edit().putString(folderID, json).apply()
+    }
+
+    private fun removeAutoCacheEntry(folderID: String) {
+        autoMatchCache.remove(folderID)
+        autoCachePrefs.edit().remove(folderID).apply()
+    }
+
+    private fun clearAutoCache() {
+        autoMatchCache.clear()
+        autoCachePrefs.edit().clear().apply()
+    }
+
+    private fun sortOrder(): FavoriteSortOrder =
+        runCatching { FavoriteSortOrder.valueOf(Preferences["port_fav_sort", "ADDED"]) }.getOrDefault(FavoriteSortOrder.ADDED)
+
+    private fun sortAscending(): Boolean = Preferences["port_fav_sort_asc", false]
 
     fun currentTitle(): String {
         val id = currentFolderID ?: return activity.getString(R.string.main_drawer_favorite)
@@ -71,12 +159,16 @@ internal class PortFavoritesView(
 
     fun cancel() {
         ruleJob?.cancel()
+        childRuleJob?.cancel()
+        nameSortJob?.cancel()
         container = null
     }
 
     fun render() {
         val host = container ?: return
         ruleJob?.cancel()
+        childRuleJob?.cancel()
+        nameSortJob?.cancel()
         host.removeAllViews()
 
         val library = runCatching { FavoriteFolders(activity) }.getOrElse {
@@ -130,6 +222,13 @@ internal class PortFavoritesView(
             }
         }, LinearLayout.LayoutParams(0, -2, 1f))
         row.addView(segment, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = style.dp(8) })
+        if (!showingArtists) {
+            val sortButton = style.action("⇅") {}.apply {
+                contentDescription = activity.getString(R.string.port_fav_sort)
+                setOnClickListener { showSortMenu(it) }
+            }
+            row.addView(sortButton, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = style.dp(6) })
+        }
         val plusButton = style.action("＋") {}
         plusButton.contentDescription = activity.getString(
             if (showingArtists) R.string.workspace_add_artist else R.string.port_fav_new_folder
@@ -150,11 +249,41 @@ internal class PortFavoritesView(
             ellipsize = TextUtils.TruncateAt.START
             setPadding(style.dp(10), 0, style.dp(10), 0)
         }, LinearLayout.LayoutParams(0, -2, 1f))
+        val sortButton = style.action("⇅") {}.apply {
+            contentDescription = activity.getString(R.string.port_fav_sort)
+            setOnClickListener { showSortMenu(it) }
+        }
+        row.addView(sortButton, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = style.dp(6) })
         val menuButton = style.action("•••") {}
         menuButton.setOnClickListener { showWorksMenu(library, folder, it) }
         menuButton.contentDescription = activity.getString(R.string.workspace_actions)
         row.addView(menuButton)
         return row
+    }
+
+    private fun showSortMenu(anchor: View) {
+        val currentOrder = sortOrder()
+        val currentAsc = sortAscending()
+        PopupMenu(activity, anchor).apply {
+            menu.add(1, 1, 0, R.string.port_fav_sort_added).apply { isChecked = currentOrder == FavoriteSortOrder.ADDED }
+            menu.add(1, 2, 1, R.string.port_fav_sort_upload).apply { isChecked = currentOrder == FavoriteSortOrder.UPLOAD }
+            menu.add(1, 3, 2, R.string.port_fav_sort_name).apply { isChecked = currentOrder == FavoriteSortOrder.NAME }
+            menu.setGroupCheckable(1, true, true)
+            menu.add(2, 4, 3, R.string.port_fav_sort_desc).apply { isChecked = !currentAsc }
+            menu.add(2, 5, 4, R.string.port_fav_sort_asc).apply { isChecked = currentAsc }
+            menu.setGroupCheckable(2, true, true)
+            setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    1 -> Preferences["port_fav_sort"] = FavoriteSortOrder.ADDED.name
+                    2 -> Preferences["port_fav_sort"] = FavoriteSortOrder.UPLOAD.name
+                    3 -> Preferences["port_fav_sort"] = FavoriteSortOrder.NAME.name
+                    4 -> Preferences["port_fav_sort_asc"] = false
+                    5 -> Preferences["port_fav_sort_asc"] = true
+                }
+                render()
+                true
+            }
+        }.show()
     }
 
     private fun showWorksMenu(library: FavoriteFolders, folder: FavoriteFolder?, anchor: View) {
@@ -192,7 +321,7 @@ internal class PortFavoritesView(
             .setPositiveButton(R.string.delete) { _, _ ->
                 val deletedCurrent = folder.id == currentFolderID
                 library.delete(folder.id)
-                autoMatchCache.remove(folder.id)
+                removeAutoCacheEntry(folder.id)
                 if (deletedCurrent) {
                     currentFolderID = folder.parentID
                     onTitleChanged()
@@ -218,7 +347,7 @@ internal class PortFavoritesView(
                 if (ids.isNotEmpty()) {
                     synchronized(favorites) { favorites.addAll(ids) }
                     folderID?.let { library.addToFolder(it, ids) }
-                    autoMatchCache.clear()
+                    clearAutoCache()
                     render()
                 }
             }
@@ -263,8 +392,41 @@ internal class PortFavoritesView(
                 ViewCompat.setAccessibilityHeading(this, true)
                 setPadding(style.dp(4), style.dp(4), 0, style.dp(6))
             })
+            val folderMetaLabels = mutableMapOf<String, TextView>()
             for (folder in children) {
-                contentStack.addView(buildFolderRow(library, folder, favSet), style.matchWrap().apply { bottomMargin = style.dp(6) })
+                val (row, metaView) = buildFolderRow(library, folder, favSet)
+                folderMetaLabels[folder.id] = metaView
+                contentStack.addView(row, style.matchWrap().apply { bottomMargin = style.dp(6) })
+            }
+            val favSignature = favoritesSignature(allFavs)
+            val staleAutoChildren = children.filter { child ->
+                child.autoRuleQuery.isNotBlank() && allFavs.isNotEmpty() &&
+                    autoMatchCache[child.id]?.let { it.rule == child.autoRuleQuery && it.favoritesHash == favSignature } != true
+            }
+            if (staleAutoChildren.isNotEmpty()) {
+                val parentSnapshot = currentFolderID
+                childRuleJob = activity.lifecycleScope.launch {
+                    for (child in staleAutoChildren) {
+                        val terms = RecommendationEngine.tagTerms(child.autoRuleQuery)
+                        val matchedSet = mutableSetOf<Int>()
+                        withContext(Dispatchers.IO) {
+                            for (term in terms) {
+                                val ids = runCatching { doSearch(term, SortMode.DATE_ADDED) }.getOrDefault(emptyList())
+                                for (id in ids) if (id in favSet) matchedSet += id
+                            }
+                        }
+                        val orderedAuto = allFavs.filter { it in matchedSet }
+                        saveAutoCacheEntry(child.id, AutoCacheEntry(child.autoRuleQuery, favSignature, orderedAuto))
+                        if (currentFolderID != parentSnapshot) return@launch
+                        val childCount = library.folders.count { it.parentID == child.id }
+                        val galleryCount = (child.manualGalleryIDs.filter { it in favSet } + orderedAuto).distinct().size
+                        folderMetaLabels[child.id]?.text = if (childCount > 0) {
+                            activity.getString(R.string.port_fav_folder_counts, galleryCount, childCount)
+                        } else {
+                            activity.getString(R.string.port_fav_folder_gallery_count, galleryCount)
+                        }
+                    }
+                }
             }
         }
 
@@ -316,6 +478,15 @@ internal class PortFavoritesView(
         }
 
         fun applyWorks(ids: List<Int>, loadingRule: Boolean = false) {
+            nameSortJob?.cancel()
+            val order = sortOrder()
+            val ascending = sortAscending()
+            val initialSorted = if (order == FavoriteSortOrder.NAME) {
+                sortFavoriteGalleryIDs(ids, allFavs, FavoriteSortOrder.ADDED, false)
+            } else {
+                sortFavoriteGalleryIDs(ids, allFavs, order, ascending)
+            }
+
             if (ids.isEmpty() && children.isEmpty()) {
                 worksHeader.visibility = View.GONE
                 worksRecycler.visibility = View.GONE
@@ -336,7 +507,19 @@ internal class PortFavoritesView(
                 worksHeader.visibility = View.VISIBLE
                 worksRecycler.visibility = View.VISIBLE
                 statusText.visibility = View.GONE
-                adapter.submitList(ids)
+                adapter.submitList(initialSorted)
+                if (order == FavoriteSortOrder.NAME) {
+                    val folderSnapshot = currentFolderID
+                    nameSortJob = activity.lifecycleScope.launch {
+                        val titles = withContext(Dispatchers.IO) {
+                            ids.associateWith { id ->
+                                runCatching { Cache.getInstance(activity, id).getGalleryInfo()?.title }.getOrNull().orEmpty()
+                            }.filterValues { it.isNotBlank() }
+                        }
+                        if (currentFolderID != folderSnapshot) return@launch
+                        adapter.submitList(sortFavoriteGalleryIDs(ids, allFavs, FavoriteSortOrder.NAME, ascending, titles))
+                    }
+                }
             }
         }
 
@@ -344,12 +527,15 @@ internal class PortFavoritesView(
         contentStack.addView(statusText)
         contentStack.addView(worksRecycler, style.matchWrap())
 
+        val favSignature = favoritesSignature(allFavs)
         if (currentFolder != null && currentFolder.autoRuleQuery.isNotBlank() && allFavs.isNotEmpty()) {
             val cached = autoMatchCache[currentFolder.id]
-            if (cached != null && cached.first == currentFolder.autoRuleQuery) {
-                applyWorks((manualIDs + cached.second.filter { it in favSet }).distinct())
+            if (cached != null && cached.rule == currentFolder.autoRuleQuery && cached.favoritesHash == favSignature) {
+                applyWorks((manualIDs + cached.matched.filter { it in favSet }).distinct())
             } else {
-                applyWorks(manualIDs, loadingRule = manualIDs.isEmpty())
+                val warmAuto = cached?.takeIf { it.rule == currentFolder.autoRuleQuery }?.matched?.filter { it in favSet }.orEmpty()
+                val initialIDs = (manualIDs + warmAuto).distinct()
+                applyWorks(initialIDs, loadingRule = initialIDs.isEmpty())
                 val targetFolderID = currentFolder.id
                 val ruleQuery = currentFolder.autoRuleQuery
                 ruleJob = activity.lifecycleScope.launch {
@@ -363,7 +549,7 @@ internal class PortFavoritesView(
                             }
                         }
                         val orderedAuto = allFavs.filter { it in matchedSet }
-                        autoMatchCache[targetFolderID] = ruleQuery to orderedAuto
+                        saveAutoCacheEntry(targetFolderID, AutoCacheEntry(ruleQuery, favSignature, orderedAuto))
                         if (currentFolderID != targetFolderID) return@launch
                         applyWorks((manualIDs + orderedAuto).distinct())
                     } catch (cancelled: CancellationException) {
@@ -381,9 +567,9 @@ internal class PortFavoritesView(
         }
     }
 
-    private fun buildFolderRow(library: FavoriteFolders, folder: FavoriteFolder, favSet: Set<Int>): LinearLayout {
+    private fun buildFolderRow(library: FavoriteFolders, folder: FavoriteFolder, favSet: Set<Int>): Pair<LinearLayout, TextView> {
         val childCount = library.folders.count { it.parentID == folder.id }
-        val autoCachedCount = autoMatchCache[folder.id]?.takeIf { it.first == folder.autoRuleQuery }?.second.orEmpty()
+        val autoCachedCount = autoMatchCache[folder.id]?.takeIf { it.rule == folder.autoRuleQuery }?.matched.orEmpty()
         val galleryCount = (folder.manualGalleryIDs.filter { it in favSet } + autoCachedCount.filter { it in favSet }).distinct().size
 
         val row = style.row().apply {
@@ -413,7 +599,8 @@ internal class PortFavoritesView(
         } else {
             activity.getString(R.string.port_fav_folder_gallery_count, galleryCount)
         }
-        info.addView(style.text(metaText, 12f, style.muted))
+        val metaView = style.text(metaText, 12f, style.muted)
+        info.addView(metaView)
         if (folder.autoRuleQuery.isNotBlank()) {
             info.addView(style.text(folder.autoRuleQuery, 12f, style.muted).apply {
                 typeface = Typeface.MONOSPACE
@@ -428,7 +615,7 @@ internal class PortFavoritesView(
             minHeight = style.dp(40)
             setOnClickListener { showFolderContextMenu(library, folder) }
         })
-        return row
+        return row to metaView
     }
 
     private fun showFolderContextMenu(library: FavoriteFolders, folder: FavoriteFolder) {
@@ -464,7 +651,7 @@ internal class PortFavoritesView(
                 setPadding(style.dp(12), style.dp(10), style.dp(8), style.dp(10))
                 isFocusable = true
                 setOnClickListener {
-                    search("artist:${artist.trim().replace(' ', '_')}")
+                    openArtistOverlay(artist, "artist:${artist.trim().replace(' ', '_')}")
                 }
             }
             row.addView(ImageView(activity).apply {

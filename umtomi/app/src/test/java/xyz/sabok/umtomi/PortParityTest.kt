@@ -10,9 +10,11 @@ import xyz.sabok.umtomi.hitomi.GalleryInfo
 import xyz.sabok.umtomi.hitomi.Group
 import xyz.sabok.umtomi.hitomi.Parody
 import xyz.sabok.umtomi.hitomi.Tag
+import xyz.sabok.umtomi.ui.FavoriteSortOrder
 import xyz.sabok.umtomi.ui.RecommendationEngine
 import xyz.sabok.umtomi.ui.WorkspaceTab
 import xyz.sabok.umtomi.ui.WorkspaceTabConfig
+import xyz.sabok.umtomi.ui.sortFavoriteGalleryIDs
 import xyz.sabok.umtomi.util.LastReadPages
 
 class PortParityTest {
@@ -39,11 +41,11 @@ class PortParityTest {
         assertEquals(1, visible.size)
 
         val reordered = WorkspaceTabConfig.moveGroupOrder(
-            listOf(WorkspaceTab.SEARCH, WorkspaceTab.RECOMMENDATIONS, WorkspaceTab.DOWNLOADS, WorkspaceTab.HISTORY, WorkspaceTab.FAVORITES, WorkspaceTab.BOOKSHELF),
-            listOf(WorkspaceTab.FAVORITES, WorkspaceTab.SEARCH, WorkspaceTab.BOOKSHELF)
+            listOf(WorkspaceTab.SEARCH, WorkspaceTab.RECOMMENDATIONS, WorkspaceTab.DOWNLOADS, WorkspaceTab.HISTORY, WorkspaceTab.FAVORITES, WorkspaceTab.BOOKSHELF, WorkspaceTab.SETTINGS),
+            listOf(WorkspaceTab.FAVORITES, WorkspaceTab.SEARCH, WorkspaceTab.BOOKSHELF, WorkspaceTab.SETTINGS)
         )
         assertEquals(
-            listOf(WorkspaceTab.FAVORITES, WorkspaceTab.RECOMMENDATIONS, WorkspaceTab.DOWNLOADS, WorkspaceTab.HISTORY, WorkspaceTab.SEARCH, WorkspaceTab.BOOKSHELF),
+            listOf(WorkspaceTab.FAVORITES, WorkspaceTab.RECOMMENDATIONS, WorkspaceTab.DOWNLOADS, WorkspaceTab.HISTORY, WorkspaceTab.SEARCH, WorkspaceTab.BOOKSHELF, WorkspaceTab.SETTINGS),
             reordered
         )
     }
@@ -72,5 +74,19 @@ class PortParityTest {
         assertEquals("korean", profile.topLanguage)
         assertTrue(RecommendationEngine.similarityScore(sample, profile) > 100.0)
         assertTrue(RecommendationEngine.searchSeeds(profile).any { it.query == "artist:artist_one" })
+    }
+
+    @Test
+    fun favoriteSortOrdersRespectAddedUploadNameAndDirection() {
+        val addedNewestFirst = listOf(102, 305, 201)
+        val ids = listOf(201, 102, 305)
+        val titles = mapOf(102 to "Beta", 305 to "alpha", 201 to "Gamma")
+
+        assertEquals(listOf(102, 305, 201), sortFavoriteGalleryIDs(ids, addedNewestFirst, FavoriteSortOrder.ADDED, ascending = false, titles))
+        assertEquals(listOf(201, 305, 102), sortFavoriteGalleryIDs(ids, addedNewestFirst, FavoriteSortOrder.ADDED, ascending = true, titles))
+        assertEquals(listOf(305, 201, 102), sortFavoriteGalleryIDs(ids, addedNewestFirst, FavoriteSortOrder.UPLOAD, ascending = false, titles))
+        assertEquals(listOf(102, 201, 305), sortFavoriteGalleryIDs(ids, addedNewestFirst, FavoriteSortOrder.UPLOAD, ascending = true, titles))
+        assertEquals(listOf(305, 102, 201), sortFavoriteGalleryIDs(ids, addedNewestFirst, FavoriteSortOrder.NAME, ascending = true, titles))
+        assertEquals(listOf(201, 102, 305), sortFavoriteGalleryIDs(ids, addedNewestFirst, FavoriteSortOrder.NAME, ascending = false, titles))
     }
 }

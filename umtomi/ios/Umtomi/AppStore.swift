@@ -46,7 +46,7 @@ final class AppStore: ObservableObject {
     private var favoriteAutoMatchCacheByFolder: [UUID: FavoriteAutoMatchCacheEntry] = [:]
     private var loadingReaderTabIDs: Set<UUID> = []
 
-    private struct FavoriteAutoMatchCacheEntry {
+    private struct FavoriteAutoMatchCacheEntry: Codable {
         let query: String
         let favorites: [Int]
         let matchedIDs: [Int]
@@ -55,6 +55,7 @@ final class AppStore: ObservableObject {
     private enum StorageKey {
         static let favorites = "umtomi.ios.favorites"
         static let favoriteLibrary = "umtomi.ios.favoriteLibrary"
+        static let favoriteAutoMatchCache = "umtomi.ios.favoriteAutoMatchCache"
         static let favoriteArtists = "umtomi.ios.favoriteArtists"
         static let history = "umtomi.ios.history"
         static let recentSearches = "umtomi.ios.recentSearches"
@@ -112,6 +113,22 @@ final class AppStore: ObservableObject {
             self.favoriteFolders = library.sanitized(validGalleryIDs: Set(self.favorites)).folders
         } else {
             self.favoriteFolders = []
+        }
+
+        if let data = Self.loadData(defaults: defaults, key: StorageKey.favoriteAutoMatchCache),
+           let persistedCache = try? JSONDecoder().decode([String: FavoriteAutoMatchCacheEntry].self, from: data) {
+            let validFavorites = Set(self.favorites)
+            let foldersByID = Dictionary(uniqueKeysWithValues: self.favoriteFolders.map { ($0.id, $0) })
+            for (rawID, entry) in persistedCache {
+                guard let folderID = UUID(uuidString: rawID),
+                      let folder = foldersByID[folderID],
+                      folder.autoRuleQuery == entry.query else {
+                    continue
+                }
+                let matched = self.favorites.filter { validFavorites.contains($0) && entry.matchedIDs.contains($0) }
+                self.favoriteAutoMatchCacheByFolder[folderID] = entry
+                self.favoriteAutoMatchedIDsByFolder[folderID] = matched
+            }
         }
 
     }
@@ -224,6 +241,35 @@ final class AppStore: ObservableObject {
 
         hasCompletedInitialSearch = true
         isSearching = false
+    }
+
+    func refreshSearch() async {
+        guard !isSearching else {
+            return
+        }
+
+        errorMessage = nil
+        currentPageIndex = 0
+
+        let userQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = effectiveQuery(for: userQuery)
+
+        do {
+            allSearchResultIDs = try await service.search(query: query, sortMode: sortMode)
+            visibleSummaries = await service.gallerySummaries(ids: currentPageIDs())
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+
+        hasCompletedInitialSearch = true
+    }
+
+    func searchIDs(for userQuery: String, sortMode: SortMode) async throws -> [Int] {
+        try await service.search(query: effectiveQuery(for: userQuery), sortMode: sortMode)
+    }
+
+    func gallerySummaries(for ids: [Int]) async -> [GallerySummary] {
+        await service.gallerySummaries(ids: ids)
     }
 
     func updateSortMode(_ sortMode: SortMode) async {
@@ -556,6 +602,12 @@ final class AppStore: ObservableObject {
         persistSettings()
     }
 
+    func updateFavoriteSort(order: FavoriteSortOrder, ascending: Bool) {
+        settings.favoriteSortOrder = order
+        settings.favoriteSortAscending = ascending
+        persistSettings()
+    }
+
     func restoreFavorites(_ galleryIDs: [Int]) async {
         await restoreFavorites(galleryIDs, library: nil, artists: nil)
     }
@@ -674,7 +726,29 @@ final class AppStore: ObservableObject {
 
     func favoriteGallerySummaries(in folderID: UUID?) -> [GallerySummary] {
         let ids = favoriteDisplayedGalleryIDs(in: folderID)
-        return ids.compactMap { favoriteSummariesByID[$0] }
+        let summaries = ids.compactMap { favoriteSummariesByID[$0] }
+        let addedOrder = Dictionary(uniqueKeysWithValues: favorites.enumerated().map { ($1, $0) })
+        let ascending = settings.favoriteSortAscending
+
+        return summaries.sorted { lhs, rhs in
+            switch settings.favoriteSortOrder {
+            case .added:
+                let leftIndex = addedOrder[lhs.id] ?? Int.max
+                let rightIndex = addedOrder[rhs.id] ?? Int.max
+                if leftIndex != rightIndex {
+                    return ascending ? leftIndex > rightIndex : leftIndex < rightIndex
+                }
+                return lhs.id > rhs.id
+            case .upload:
+                return ascending ? lhs.id < rhs.id : lhs.id > rhs.id
+            case .name:
+                let comparison = lhs.title.localizedCaseInsensitiveCompare(rhs.title)
+                if comparison != .orderedSame {
+                    return ascending ? comparison == .orderedAscending : comparison == .orderedDescending
+                }
+                return ascending ? lhs.id < rhs.id : lhs.id > rhs.id
+            }
+        }
     }
 
     func isFavoriteManuallyContained(_ galleryID: Int, in folderID: UUID) -> Bool {
@@ -687,6 +761,7 @@ final class AppStore: ObservableObject {
 
     func saveFavoriteFolder(_ folder: FavoriteFolder) {
         let sanitized = folder.sanitized(validGalleryIDs: Set(favorites))
+        let previous = favoriteFolder(id: sanitized.id)
 
         if let index = favoriteFolders.firstIndex(where: { $0.id == sanitized.id }) {
             favoriteFolders[index] = sanitized
@@ -694,8 +769,13 @@ final class AppStore: ObservableObject {
             favoriteFolders.append(sanitized)
         }
 
-        invalidateFavoriteAutoMatchCache(for: sanitized.id)
+        if previous?.autoRuleQuery != sanitized.autoRuleQuery {
+            invalidateFavoriteAutoMatchCache(for: sanitized.id)
+        }
         persistFavoriteLibrary()
+        if sanitized.hasAutoRules {
+            Task { await prepareFavoriteAutoMatchesIfNeeded(for: sanitized.id) }
+        }
     }
 
     func removeGallery(_ galleryID: Int, from folderID: UUID) {
@@ -715,6 +795,13 @@ final class AppStore: ObservableObject {
         persistFavoriteLibrary()
     }
 
+    func prepareChildFavoriteAutoMatchesIfNeeded(in parentID: UUID?) async {
+        let children = favoriteFolders(in: parentID).filter(\.hasAutoRules)
+        for child in children {
+            await prepareFavoriteAutoMatchesIfNeeded(for: child.id)
+        }
+    }
+
     func prepareFavoriteAutoMatchesIfNeeded(for folderID: UUID) async {
         guard let folder = favoriteFolder(id: folderID) else {
             return
@@ -728,6 +815,7 @@ final class AppStore: ObservableObject {
                 favorites: favorites,
                 matchedIDs: []
             )
+            persistFavoriteAutoMatchCache()
             return
         }
 
@@ -761,6 +849,7 @@ final class AppStore: ObservableObject {
             favorites: favorites,
             matchedIDs: orderedMatches
         )
+        persistFavoriteAutoMatchCache()
     }
 
     func lastReadPage(for galleryID: Int) -> Int? {
@@ -1041,7 +1130,13 @@ final class AppStore: ObservableObject {
     private func refreshFavorites() async {
         favoriteSummaries = await service.gallerySummaries(ids: favorites)
         favoriteSummariesByID = Dictionary(uniqueKeysWithValues: favoriteSummaries.map { ($0.id, $0) })
-        invalidateFavoriteAutoMatchCache()
+        let validFavorites = Set(favorites)
+        for folder in favoriteFolders where folder.hasAutoRules {
+            if let existing = favoriteAutoMatchedIDsByFolder[folder.id] {
+                favoriteAutoMatchedIDsByFolder[folder.id] = favorites.filter { validFavorites.contains($0) && existing.contains($0) }
+            }
+            await prepareFavoriteAutoMatchesIfNeeded(for: folder.id)
+        }
     }
 
     private func refreshHistory() async {
@@ -1111,6 +1206,14 @@ final class AppStore: ObservableObject {
         UserDefaults.standard.set(data, forKey: StorageKey.favoriteLibrary)
     }
 
+    private func persistFavoriteAutoMatchCache() {
+        let encoded = Dictionary(uniqueKeysWithValues: favoriteAutoMatchCacheByFolder.map { ($0.key.uuidString, $0.value) })
+        guard let data = try? JSONEncoder().encode(encoded) else {
+            return
+        }
+        UserDefaults.standard.set(data, forKey: StorageKey.favoriteAutoMatchCache)
+    }
+
     private func persistFavoriteArtists() {
         let artists = FavoriteArtist.uniqueArtists(from: favoriteArtists)
         favoriteArtists = artists
@@ -1164,6 +1267,7 @@ final class AppStore: ObservableObject {
             favoriteAutoMatchCacheByFolder = [:]
             favoriteAutoMatchedIDsByFolder = [:]
         }
+        persistFavoriteAutoMatchCache()
     }
 
     private func invalidateFavoriteAutoMatchCache(for folderIDs: Set<UUID>) {
@@ -1171,6 +1275,7 @@ final class AppStore: ObservableObject {
             favoriteAutoMatchCacheByFolder.removeValue(forKey: folderID)
             favoriteAutoMatchedIDsByFolder.removeValue(forKey: folderID)
         }
+        persistFavoriteAutoMatchCache()
     }
 
     private func descendantFavoriteFolderIDs(of folderID: UUID) -> Set<UUID> {

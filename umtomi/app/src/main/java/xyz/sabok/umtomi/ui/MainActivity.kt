@@ -25,6 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -82,7 +83,7 @@ class MainActivity : BaseActivity() {
             style = style,
             openGallery = ::showGallery,
             galleryActions = ::galleryActions,
-            search = ::searchFor,
+            openArtistOverlay = ::showSearchOverlay,
             onTitleChanged = { headingLabel?.text = favoritesView.currentTitle() },
         ).apply {
             currentFolderID = savedInstanceState?.getString("fav_folder")
@@ -185,6 +186,10 @@ class MainActivity : BaseActivity() {
     private fun openReader(id: Int) = launch(ReaderActivity::class.java) { putExtra("galleryID", id) }
 
     private fun openTab(tab: WorkspaceTab) {
+        if (tab == WorkspaceTab.SETTINGS) {
+            showSettings()
+            return
+        }
         if (activeTab != tab) {
             activeTab = tab
             renderTab()
@@ -237,6 +242,7 @@ class MainActivity : BaseActivity() {
                 favoritesView.mount(favContainer)
             }
             WorkspaceTab.BOOKSHELF -> buildShelfIndex(panel)
+            WorkspaceTab.SETTINGS -> showSettings()
         }
     }
 
@@ -325,8 +331,14 @@ class MainActivity : BaseActivity() {
 
     private fun snapshot(set: Set<Int>) = synchronized(set) { set.toList().asReversed() }
 
-    private data class ResultList(val adapter: PortGalleryAdapter, val widget: RecyclerView, val message: LinearLayout)
-    private fun addList(panel: LinearLayout, cards: Boolean): ResultList {
+    private data class ResultList(
+        val adapter: PortGalleryAdapter,
+        val widget: RecyclerView,
+        val message: LinearLayout,
+        val refresh: SwipeRefreshLayout? = null,
+    )
+
+    private fun addList(panel: LinearLayout, cards: Boolean, refreshable: Boolean = false): ResultList {
         val access = PortGalleryAdapter(this, style, lifecycleScope, cards, ::showGallery, ::galleryActions)
         val list = RecyclerView(this).apply {
             layoutManager = if (cards) {
@@ -343,11 +355,20 @@ class MainActivity : BaseActivity() {
             gravity = Gravity.CENTER
             visibility = View.GONE
         }
+        val refreshLayout = if (refreshable) {
+            SwipeRefreshLayout(this).apply {
+                setColorSchemeColors(style.accent)
+                setProgressBackgroundColorSchemeColor(style.surface)
+                addView(list, android.view.ViewGroup.LayoutParams(-1, -1))
+            }
+        } else {
+            null
+        }
         panel.addView(FrameLayout(this).apply {
-            addView(list, FrameLayout.LayoutParams(-1, -1))
+            addView(refreshLayout ?: list, FrameLayout.LayoutParams(-1, -1))
             addView(message, FrameLayout.LayoutParams(-1, -2, Gravity.CENTER))
         }, LinearLayout.LayoutParams(-1, 0, 1f))
-        return ResultList(access, list, message)
+        return ResultList(access, list, message, refreshLayout)
     }
 
     private fun feedback(list: ResultList, label: Int, pending: Boolean = false, retry: (() -> Unit)? = null) {
@@ -383,13 +404,68 @@ class MainActivity : BaseActivity() {
 
     private fun buildSearch(panel: LinearLayout) {
         renderedPageSize = pageSize()
+        mountSearchWorkspace(
+            panel = panel,
+            initialQuery = query,
+            initialSort = sort,
+            initialPage = page,
+            initialEntries = entries,
+            initialKey = entryKey,
+            trackInMainState = true,
+        )
+    }
+
+    private fun showSearchOverlay(title: String, initialQuery: String) {
+        val panel = style.stack().apply {
+            setBackgroundColor(style.background)
+            setPadding(style.dp(15), style.dp(6), style.dp(15), 0)
+        }
+        val topBar = style.row().apply {
+            addView(style.action("‹  " + getString(R.string.port_back)) { popScreen() })
+            addView(style.text(title, 20f, bold = true).apply {
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(style.dp(10), 0, style.dp(10), 0)
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(style.action(getString(R.string.port_close)) { popScreen() })
+        }
+        panel.addView(topBar, style.matchWrap().apply { bottomMargin = style.dp(10) })
+        mountSearchWorkspace(
+            panel = panel,
+            initialQuery = initialQuery,
+            initialSort = SortMode.DATE_ADDED,
+            initialPage = 0,
+            initialEntries = emptyList(),
+            initialKey = null,
+            trackInMainState = false,
+        )
+        pushOverlay(panel)
+    }
+
+    private fun mountSearchWorkspace(
+        panel: LinearLayout,
+        initialQuery: String,
+        initialSort: SortMode,
+        initialPage: Int,
+        initialEntries: List<Int>,
+        initialKey: Pair<String, SortMode>?,
+        trackInMainState: Boolean,
+    ) {
+        var activeQuery = initialQuery
+        var activeSort = initialSort
+        var activePage = initialPage
+        var activeEntries = initialEntries
+        var activeKey = initialKey
+        var activeSuggestJob: Job? = null
+        var activeSearchJob: Job? = null
+
         val row = style.row().apply {
             background = style.rounded(style.surface, 13)
             setPadding(style.dp(10), 0, style.dp(4), 0)
         }
         val field = EditText(this).apply {
             hint = getString(R.string.port_search_hint)
-            setText(query)
+            setText(activeQuery)
             setTextColor(style.foreground)
             setHintTextColor(style.muted)
             textSize = 16f
@@ -400,18 +476,104 @@ class MainActivity : BaseActivity() {
             minHeight = style.dp(48)
             setPadding(style.dp(6), 0, style.dp(6), 0)
         }
-        row.addView(field, LinearLayout.LayoutParams(0, -2, 1f))
-        row.addView(style.action(getString(R.string.workspace_search)) { searchFor(field.text.toString()) })
-        panel.addView(row, style.matchWrap())
+        val pages = style.row()
+        val sortButton = style.action(getString(sortLabel(activeSort))) {}
+        val prev = style.action("‹") {}
+        val next = style.action("›") {}
+        val position = style.action("—") {}
+        prev.contentDescription = getString(R.string.port_previous)
+        next.contentDescription = getString(R.string.port_next)
+
+        val resultSummary = style.text("", 12f, style.muted).apply {
+            setPadding(style.dp(4), 0, style.dp(4), style.dp(6))
+            visibility = View.GONE
+        }
+
         val suggestions = style.stack().apply { visibility = View.GONE }
+        lateinit var list: ResultList
+
+        fun syncState() {
+            if (trackInMainState) {
+                query = activeQuery
+                sort = activeSort
+                page = activePage
+                entries = activeEntries
+                entryKey = activeKey
+            }
+        }
+
+        fun showPage(): List<Int> {
+            val size = pageSize()
+            val last = if (activeEntries.isEmpty()) 0 else (activeEntries.size - 1) / size
+            activePage = activePage.coerceIn(0, last)
+            syncState()
+            position.text = getString(R.string.port_page, activePage + 1, last + 1)
+            resultSummary.text = getString(R.string.port_results_count, activeEntries.size)
+            resultSummary.visibility = View.VISIBLE
+            prev.isEnabled = activePage > 0
+            next.isEnabled = activePage < last
+            prev.alpha = if (prev.isEnabled) 1f else 0.42f
+            next.alpha = if (next.isEnabled) 1f else 0.42f
+            return activeEntries.drop(activePage * size).take(size)
+        }
+
+        fun runQuery(forceRefresh: Boolean = false, hideKeyboard: Boolean = false) {
+            if (hideKeyboard) {
+                (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(root.windowToken, 0)
+                panel.requestFocus()
+            }
+            val key = searchQuery(activeQuery) to activeSort
+            if (!forceRefresh && activeKey == key) {
+                showResults(list, showPage())
+                list.refresh?.isRefreshing = false
+                return
+            }
+            activeSearchJob?.cancel()
+            if (trackInMainState) loadJob?.cancel()
+            if (!forceRefresh) feedback(list, R.string.port_loading, pending = true)
+            val job = lifecycleScope.launch {
+                try {
+                    activeEntries = withContext(Dispatchers.IO) { doSearch(key.first, key.second).distinct() }
+                    activeKey = key
+                    if (forceRefresh) activePage = 0
+                    showResults(list, showPage())
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (forceRefresh) showMessage(getString(R.string.port_load_failed))
+                    else feedback(list, R.string.port_load_failed, retry = { runQuery(forceRefresh = false) })
+                } finally {
+                    list.refresh?.isRefreshing = false
+                }
+            }
+            activeSearchJob = job
+            if (trackInMainState) loadJob = job
+        }
+
+        fun submitSearch(rawText: String) {
+            val normalized = rawText.trim().take(512)
+            activeQuery = normalized
+            activePage = 0
+            if (normalized.isNotBlank()) searchHistory.add(normalized)
+            field.setText(normalized)
+            field.setSelection(normalized.length)
+            suggestions.visibility = View.GONE
+            runQuery(forceRefresh = true, hideKeyboard = true)
+        }
+
+        row.addView(field, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(style.action(getString(R.string.workspace_search)) { submitSearch(field.text.toString()) })
+        panel.addView(row, style.matchWrap())
         panel.addView(suggestions, style.matchWrap())
+
         fun suggest() {
-            suggestionsJob?.cancel()
+            activeSuggestJob?.cancel()
+            if (trackInMainState) suggestionsJob?.cancel()
             suggestions.removeAllViews()
             suggestions.visibility = View.GONE
             if (!field.hasFocus()) return
             val text = field.text.toString()
-            suggestionsJob = lifecycleScope.launch {
+            val job = lifecycleScope.launch {
                 val options: List<Pair<String, String>> = if (text.isBlank()) {
                     synchronized(searchHistory) { searchHistory.toList().asReversed().take(4) }.map { it to it }
                 } else {
@@ -436,75 +598,72 @@ class MainActivity : BaseActivity() {
                 }
                 if (!field.hasFocus() || field.text.toString() != text) return@launch
                 options.forEach { (display, completed) ->
-                    suggestions.addView(style.action(display) { searchFor(completed) }.apply {
+                    suggestions.addView(style.action(display) { submitSearch(completed) }.apply {
                         gravity = Gravity.START or Gravity.CENTER_VERTICAL
                     }, style.matchWrap().apply { topMargin = style.dp(3) })
                 }
                 suggestions.visibility = if (options.isEmpty()) View.GONE else View.VISIBLE
             }
+            activeSuggestJob = job
+            if (trackInMainState) suggestionsJob = job
         }
+
         field.setOnFocusChangeListener { _, _ -> suggest() }
         field.doAfterTextChanged { suggest() }
         field.setOnEditorActionListener { _, action, _ ->
             if (action != EditorInfo.IME_ACTION_SEARCH) false
-            else { searchFor(field.text.toString()); true }
+            else { submitSearch(field.text.toString()); true }
         }
         panel.isFocusableInTouchMode = true
         panel.requestFocus()
 
-        val pages = style.row()
-        val sortButton = style.action(getString(sortLabel(sort))) {
+        sortButton.setOnClickListener {
             val modes = SortMode.entries
             AlertDialog.Builder(this).setTitle(R.string.port_sort)
-                .setSingleChoiceItems(modes.map { getString(sortLabel(it)) }.toTypedArray(), modes.indexOf(sort)) { dialog, position ->
+                .setSingleChoiceItems(modes.map { getString(sortLabel(it)) }.toTypedArray(), modes.indexOf(activeSort)) { dialog, pos ->
                     dialog.dismiss()
-                    sort = modes[position]
-                    page = 0
-                    renderTab()
+                    activeSort = modes[pos]
+                    activePage = 0
+                    sortButton.text = getString(sortLabel(activeSort))
+                    runQuery(forceRefresh = false)
                 }.show()
         }
-        val prev = style.action("‹") { if (page > 0) { page--; renderTab() } }
-        val next = style.action("›") { page++; renderTab() }
-        val position = style.action("—") {
-            if (entries.isNotEmpty()) numberInput(R.string.main_jump_title, page + 1) { value ->
-                page = (value - 1).coerceIn(0, lastPage())
-                renderTab()
+        prev.setOnClickListener {
+            if (activePage > 0) {
+                activePage--
+                showResults(list, showPage())
+                list.widget.scrollToPosition(0)
             }
         }
-        prev.contentDescription = getString(R.string.port_previous)
-        next.contentDescription = getString(R.string.port_next)
+        next.setOnClickListener {
+            val last = if (activeEntries.isEmpty()) 0 else (activeEntries.size - 1) / pageSize()
+            if (activePage < last) {
+                activePage++
+                showResults(list, showPage())
+                list.widget.scrollToPosition(0)
+            }
+        }
+        position.setOnClickListener {
+            if (activeEntries.isNotEmpty()) numberInput(R.string.main_jump_title, activePage + 1) { value ->
+                val last = (activeEntries.size - 1) / pageSize()
+                activePage = (value - 1).coerceIn(0, last)
+                showResults(list, showPage())
+                list.widget.scrollToPosition(0)
+            }
+        }
+
         pages.addView(sortButton, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = style.dp(8) })
         pages.addView(prev)
         pages.addView(position, LinearLayout.LayoutParams(-2, -2).apply { marginStart = style.dp(4) })
         pages.addView(next, LinearLayout.LayoutParams(-2, -2).apply { marginStart = style.dp(4) })
         panel.addView(pages, style.matchWrap().apply { topMargin = style.dp(10); bottomMargin = style.dp(4) })
-        val resultSummary = style.text("", 12f, style.muted).apply {
-            setPadding(style.dp(4), 0, style.dp(4), style.dp(6))
-            visibility = View.GONE
-        }
         panel.addView(resultSummary, style.matchWrap())
-        val list = addList(panel, cards = true)
+
+        list = addList(panel, cards = true, refreshable = true)
+        list.refresh?.setOnRefreshListener { runQuery(forceRefresh = true) }
         prev.isEnabled = false
         next.isEnabled = false
-        fun showPage(): List<Int> {
-            val last = lastPage()
-            page = page.coerceIn(0, last)
-            position.text = getString(R.string.port_page, page + 1, last + 1)
-            resultSummary.text = getString(R.string.port_results_count, entries.size)
-            resultSummary.visibility = View.VISIBLE
-            prev.isEnabled = page > 0
-            next.isEnabled = page < last
-            prev.alpha = if (prev.isEnabled) 1f else 0.42f
-            next.alpha = if (next.isEnabled) 1f else 0.42f
-            return entries.drop(page * pageSize()).take(pageSize())
-        }
-        val key = searchQuery(query) to sort
-        if (entryKey == key) showResults(list, showPage())
-        else load(list) {
-            entries = withContext(Dispatchers.IO) { doSearch(key.first, key.second).distinct() }
-            entryKey = key
-            showPage()
-        }
+        runQuery(forceRefresh = false)
     }
 
     private fun pageSize(): Int = (Preferences["per_page", "25"].toIntOrNull() ?: 25).coerceAtLeast(1)
@@ -516,7 +675,6 @@ class MainActivity : BaseActivity() {
         val excluded = RecommendationEngine.tagTerms(Preferences["port_excluded_tags", ""]).map { "-$it" }
         return (included + excluded).joinToString(" ")
     }
-    private fun lastPage() = if (entries.isEmpty()) 0 else (entries.size - 1) / pageSize()
 
     private fun searchFor(text: String) {
         clearScreens()

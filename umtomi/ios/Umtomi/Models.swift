@@ -8,6 +8,7 @@ enum UmtomiTab: String, CaseIterable, Identifiable, Hashable, Codable {
     case history
     case favorites
     case bookshelf
+    case settings
 
     var id: String { rawValue }
 
@@ -25,6 +26,8 @@ enum UmtomiTab: String, CaseIterable, Identifiable, Hashable, Codable {
             return "Bookshelf"
         case .favorites:
             return "Favorites"
+        case .settings:
+            return "Settings"
         }
     }
 
@@ -42,11 +45,13 @@ enum UmtomiTab: String, CaseIterable, Identifiable, Hashable, Codable {
             return "books.vertical.fill"
         case .favorites:
             return "star.fill"
+        case .settings:
+            return "gearshape"
         }
     }
 
     static var defaultOrder: [UmtomiTab] {
-        [.search, .algorithm, .downloads, .history, .favorites, .bookshelf]
+        [.search, .algorithm, .downloads, .history, .favorites, .bookshelf, .settings]
     }
 
     static func sanitized(_ order: [UmtomiTab]) -> [UmtomiTab] {
@@ -145,6 +150,14 @@ enum FavoriteBrowserSection: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum FavoriteSortOrder: String, CaseIterable, Identifiable, Codable {
+    case added = "Date Favorited"
+    case upload = "Upload Order"
+    case name = "Name"
+
+    var id: String { rawValue }
+}
+
 struct UmtomiSettings: Codable, Equatable {
     var defaultQuery: String = ""
     var appLanguage: AppLanguage = .english
@@ -160,6 +173,8 @@ struct UmtomiSettings: Codable, Equatable {
     var tabOrder: [UmtomiTab] = UmtomiTab.defaultOrder
     var showsMoreTab = false
     var moreTabs: [UmtomiTab] = [.algorithm, .downloads]
+    var favoriteSortOrder: FavoriteSortOrder = .added
+    var favoriteSortAscending: Bool = false
 
     var barTabs: [UmtomiTab] {
         let order = UmtomiTab.sanitized(tabOrder)
@@ -186,6 +201,8 @@ struct UmtomiSettings: Codable, Equatable {
         case tabOrder
         case showsMoreTab
         case moreTabs
+        case favoriteSortOrder
+        case favoriteSortAscending
     }
 
     init() {}
@@ -208,6 +225,8 @@ struct UmtomiSettings: Codable, Equatable {
         let hidden = Set(try container.decodeIfPresent([UmtomiTab].self, forKey: .moreTabs) ?? moreTabs)
         moreTabs = tabOrder.filter(hidden.contains)
         if moreTabs.count == tabOrder.count { moreTabs.removeFirst() }
+        favoriteSortOrder = try container.decodeIfPresent(FavoriteSortOrder.self, forKey: .favoriteSortOrder) ?? .added
+        favoriteSortAscending = try container.decodeIfPresent(Bool.self, forKey: .favoriteSortAscending) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -226,6 +245,8 @@ struct UmtomiSettings: Codable, Equatable {
         try container.encode(UmtomiTab.sanitized(tabOrder), forKey: .tabOrder)
         try container.encode(showsMoreTab, forKey: .showsMoreTab)
         try container.encode(moreTabs, forKey: .moreTabs)
+        try container.encode(favoriteSortOrder, forKey: .favoriteSortOrder)
+        try container.encode(favoriteSortAscending, forKey: .favoriteSortAscending)
     }
 }
 

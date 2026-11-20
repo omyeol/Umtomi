@@ -143,3 +143,11 @@
 "Landscape" = "横";
 
 "Paste image" = "画像を貼り付け";
+
+"Date Favorited" = "追加順";
+"Upload Order" = "アップロード順";
+"Name" = "名前順";
+"Sort Direction" = "並び替え方向";
+"Ascending" = "昇順";
+"Descending" = "降順";
+"Sort Favorites" = "お気に入りの並び替え";

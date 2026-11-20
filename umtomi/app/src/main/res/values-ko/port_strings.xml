@@ -132,6 +132,13 @@
     <string name="port_drive_local">로컬에 저장</string>
     <string name="port_drive_on_demand">필요할 때 클라우드에서 불러오기</string>
     <string name="port_drive_image_mode">책장 사진 저장 방식</string>
+    <string name="port_fav_sort">즐겨찾기 정렬</string>
+    <string name="port_fav_sort_added">추가한 순</string>
+    <string name="port_fav_sort_upload">업로드순</string>
+    <string name="port_fav_sort_name">이름순</string>
+    <string name="port_fav_sort_desc">내림차순</string>
+    <string name="port_fav_sort_asc">오름차순</string>
+    <string name="port_close">닫기</string>
 </resources>
 
 

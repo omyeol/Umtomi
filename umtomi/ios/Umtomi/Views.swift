@@ -105,10 +105,12 @@ struct RootView: View {
                         Label(LocalizedStringKey(tab.titleKey), systemImage: tab.systemImage)
                     }
                 }
-                Button {
-                    showingSettings = true
-                } label: {
-                    Label("Settings", systemImage: "gearshape")
+                if !store.settings.overflowTabs.contains(.settings) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
                 }
             }
             .scrollContentBackground(store.settings.darkModeEnabled ? .hidden : .automatic)
@@ -147,6 +149,10 @@ struct RootView: View {
         case .favorites:
             NavigationStack {
                 FavoritesView(store: store, folderID: nil)
+            }
+        case .settings:
+            NavigationStack {
+                SettingsView(store: store, showsDoneButton: false)
             }
         }
     }
@@ -317,6 +323,9 @@ struct BrowseView: View {
                 }
             }
             .padding()
+        }
+        .refreshable {
+            await store.refreshSearch()
         }
         .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Umtomi")
@@ -748,6 +757,7 @@ struct FavoritesView: View {
     @State private var editorContext: FavoriteFolderEditorContext?
     @State private var pendingDeleteFolder: FavoriteFolder?
     @State private var selectedRootSection: FavoriteBrowserSection = .works
+    @State private var artistSearchOverlay: FavoriteArtist?
 
     private var currentFolder: FavoriteFolder? {
         guard let folderID else {
@@ -801,7 +811,48 @@ struct FavoritesView: View {
         .navigationTitle(title)
         .toolbar {
             if isShowingWorksSection {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Menu {
+                        Section("Sort Order") {
+                            ForEach(FavoriteSortOrder.allCases) { order in
+                                Button {
+                                    store.updateFavoriteSort(order: order, ascending: store.settings.favoriteSortAscending)
+                                } label: {
+                                    if store.settings.favoriteSortOrder == order {
+                                        Label(LocalizedStringKey(order.rawValue), systemImage: "checkmark")
+                                    } else {
+                                        Text(LocalizedStringKey(order.rawValue))
+                                    }
+                                }
+                            }
+                        }
+
+                        Section("Sort Direction") {
+                            Button {
+                                store.updateFavoriteSort(order: store.settings.favoriteSortOrder, ascending: false)
+                            } label: {
+                                if !store.settings.favoriteSortAscending {
+                                    Label("Descending", systemImage: "checkmark")
+                                } else {
+                                    Text("Descending")
+                                }
+                            }
+
+                            Button {
+                                store.updateFavoriteSort(order: store.settings.favoriteSortOrder, ascending: true)
+                            } label: {
+                                if store.settings.favoriteSortAscending {
+                                    Label("Ascending", systemImage: "checkmark")
+                                } else {
+                                    Text("Ascending")
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                    .accessibilityLabel("Sort Favorites")
+
                     Menu {
                         Button {
                             editorContext = FavoriteFolderEditorContext(
@@ -840,14 +891,16 @@ struct FavoritesView: View {
                 )
             }
         }
-        .onAppear {
-            guard let folderID else {
-                return
+        .sheet(item: $artistSearchOverlay) { artist in
+            NavigationStack {
+                ArtistSearchOverlayView(store: store, artist: artist)
             }
-
-            Task {
+        }
+        .task(id: folderID) {
+            if let folderID {
                 await store.prepareFavoriteAutoMatchesIfNeeded(for: folderID)
             }
+            await store.prepareChildFavoriteAutoMatchesIfNeeded(in: folderID)
         }
         .alert(
             "Delete Folder?",
@@ -998,9 +1051,7 @@ struct FavoritesView: View {
 
     private func favoriteArtistRow(for artist: FavoriteArtist) -> some View {
         Button {
-            Task {
-                await store.searchForTag(store.artistSearchQuery(for: artist.name))
-            }
+            artistSearchOverlay = artist
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "person.crop.square.fill")
@@ -1752,6 +1803,257 @@ struct DetailSearchOverlayView: View {
             summaries = []
             store.errorMessage = error.localizedDescription
         }
+    }
+}
+
+struct ArtistSearchOverlayView: View {
+    @ObservedObject var store: AppStore
+    let artist: FavoriteArtist
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+
+    @State private var queryText: String
+    @State private var sortMode: SortMode = .dateAdded
+    @State private var allIDs: [Int] = []
+    @State private var visibleSummaries: [GallerySummary] = []
+    @State private var currentPageIndex = 0
+    @State private var isSearching = true
+    @State private var isLoadingPage = false
+    @State private var hasCompletedSearch = false
+    @State private var isJumpToPagePresented = false
+    @State private var suggestions: [SearchSuggestion] = []
+    @State private var suggestionTask: Task<Void, Never>?
+
+    private let columns = [GridItem(.adaptive(minimum: 150, maximum: 220), spacing: 16)]
+
+    init(store: AppStore, artist: FavoriteArtist) {
+        self.store = store
+        self.artist = artist
+        _queryText = State(initialValue: store.artistSearchQuery(for: artist.name))
+    }
+
+    private var pageSize: Int {
+        max(store.settings.pageSize, 1)
+    }
+
+    private var totalPageCount: Int {
+        max(Int(ceil(Double(max(allIDs.count, 1)) / Double(pageSize))), 1)
+    }
+
+    private var currentPageDisplay: Int {
+        min(currentPageIndex + 1, totalPageCount)
+    }
+
+    private var canGoToPreviousPage: Bool {
+        currentPageIndex > 0
+    }
+
+    private var canGoToNextPage: Bool {
+        currentPageIndex + 1 < totalPageCount
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                headerSection
+                pageSection
+
+                if isSearching || isLoadingPage {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("Loading galleries...")
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else if visibleSummaries.isEmpty {
+                    ContentUnavailableView(
+                        "No Result",
+                        systemImage: "rectangle.stack.badge.magnifyingglass",
+                        description: Text("Adjust the query or sort mode and try again.")
+                    )
+                } else {
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(visibleSummaries) { summary in
+                            NavigationLink {
+                                GalleryDetailView(store: store, galleryID: summary.id)
+                            } label: {
+                                GalleryCardView(summary: summary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .refreshable {
+            await refreshSearch()
+        }
+        .background(colorScheme == .dark ? Color.black : Color.clear)
+        .navigationTitle(artist.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $queryText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search galleries")
+        .onSubmit(of: .search) {
+            Task {
+                await performSearch()
+            }
+        }
+        .searchSuggestions {
+            ForEach(suggestions) { suggestion in
+                Button("\(suggestion.label) (\(suggestion.count))") {
+                    queryText = suggestion.query
+                }
+                .searchCompletion(suggestion.query)
+            }
+        }
+        .onChange(of: queryText) { _, newValue in
+            suggestionTask?.cancel()
+            suggestionTask = Task {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty, newValue.last?.isWhitespace != true else {
+                    suggestions = []
+                    return
+                }
+                suggestions = (try? await HitomiService.shared.suggestions(for: trimmed)) ?? []
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Done") {
+                    dismiss()
+                }
+            }
+        }
+        .sheet(isPresented: $isJumpToPagePresented) {
+            IntegerInputSheet(
+                title: "Jump to Page",
+                message: store.localized("Enter a page between 1 and %lld.", Int64(totalPageCount)),
+                placeholder: "\(currentPageDisplay)",
+                actionTitle: "Go"
+            ) { value in
+                Task {
+                    await goToPage(value)
+                }
+            }
+        }
+        .task(id: artist.id) {
+            await performSearch()
+        }
+        .onDisappear {
+            suggestionTask?.cancel()
+        }
+    }
+
+    private var headerSection: some View {
+        HStack(spacing: 12) {
+            Text("Sort Order")
+                .font(.subheadline.weight(.semibold))
+
+            Picker("Sort", selection: $sortMode) {
+                ForEach(SortMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.menu)
+            .onChange(of: sortMode) { _, _ in
+                Task {
+                    await performSearch()
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var pageSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(hasCompletedSearch ? store.localized("%lld results", Int64(allIDs.count)) : "Loading results...")
+                    .font(.headline)
+
+                Spacer()
+
+                Text(hasCompletedSearch
+                     ? store.localized("Page %lld/%lld", Int64(currentPageDisplay), Int64(totalPageCount))
+                     : "Preparing first page...")
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                Button("Previous") {
+                    Task { await goToPage(currentPageDisplay - 1) }
+                }
+                .buttonStyle(.bordered)
+                .disabled(!canGoToPreviousPage)
+
+                Button("Jump") {
+                    isJumpToPagePresented = true
+                }
+                .buttonStyle(.bordered)
+                .disabled(allIDs.isEmpty)
+
+                Button("Next") {
+                    Task { await goToPage(currentPageDisplay + 1) }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canGoToNextPage)
+            }
+        }
+    }
+
+    private func currentPageIDs() -> [Int] {
+        guard !allIDs.isEmpty else { return [] }
+        let lower = currentPageIndex * pageSize
+        let upper = min(lower + pageSize, allIDs.count)
+        guard lower < upper else { return [] }
+        return Array(allIDs[lower..<upper])
+    }
+
+    @MainActor
+    private func performSearch() async {
+        isSearching = true
+        currentPageIndex = 0
+        visibleSummaries = []
+
+        let userQuery = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            allIDs = try await store.searchIDs(for: userQuery, sortMode: sortMode)
+            visibleSummaries = await store.gallerySummaries(for: currentPageIDs())
+        } catch {
+            allIDs = []
+            visibleSummaries = []
+            store.errorMessage = error.localizedDescription
+        }
+        hasCompletedSearch = true
+        isSearching = false
+    }
+
+    @MainActor
+    private func refreshSearch() async {
+        guard !isSearching else { return }
+        currentPageIndex = 0
+        let userQuery = queryText.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            allIDs = try await store.searchIDs(for: userQuery, sortMode: sortMode)
+            visibleSummaries = await store.gallerySummaries(for: currentPageIDs())
+        } catch {
+            store.errorMessage = error.localizedDescription
+        }
+        hasCompletedSearch = true
+    }
+
+    @MainActor
+    private func goToPage(_ page: Int) async {
+        let normalized = min(max(page, 1), totalPageCount)
+        let target = normalized - 1
+        guard target != currentPageIndex else { return }
+        currentPageIndex = target
+        isLoadingPage = true
+        defer { isLoadingPage = false }
+        visibleSummaries = await store.gallerySummaries(for: currentPageIDs())
     }
 }
 
@@ -2661,6 +2963,7 @@ struct ZoomableReaderImage: View {
 
 struct SettingsView: View {
     @ObservedObject var store: AppStore
+    var showsDoneButton: Bool = true
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @State private var isExportingFavorites = false
@@ -2902,9 +3205,11 @@ struct SettingsView: View {
                 EditButton()
             }
 
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Done") {
-                    dismiss()
+            if showsDoneButton {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
                 }
             }
         }

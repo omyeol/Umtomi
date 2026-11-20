@@ -15,8 +15,8 @@ android {
         applicationId = "xyz.sabok.umtomi"
         minSdk = 21
         targetSdk = 35
-        versionCode = 104
-        versionName = "5.15.4"
+        versionCode = 105
+        versionName = "5.15.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -74,6 +74,7 @@ dependencies {
     implementation(libs.fragment.ktx)
     implementation(libs.preference.ktx)
     implementation(libs.recyclerview)
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation(libs.constraintlayout)
     implementation(libs.gridlayout)
     implementation(libs.biometric)
