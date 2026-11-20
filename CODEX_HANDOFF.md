@@ -1,3 +1,11 @@
+# iOS 5.4.7 instant biometric unlock
+
+- Updated `umtomi/ios/Umtomi/AppLock.swift`, `umtomi/ios/Umtomi/AppLockViews.swift`, and `umtomi/ios/project.yml` (`5.4.7`, build `9`):
+  - Offloaded `LAContext.canEvaluatePolicy` and `evaluatePolicy` via `BiometricSession` on a `.userInteractive` queue, pre-warming availability during `.inactive` / `onAppear`.
+  - Triggered biometrics directly on `.active` via `onAppear` / `onChange(of: phase)` with `Task(priority: .userInteractive)` instead of nested `.task` + `Task`.
+  - Applied `authenticating = false`, `message = nil`, `suppressInactiveShield`, and `locked = false` atomically inside one non-animated `Transaction` on `DispatchQueue.main.async` before releasing `activeSession`.
+- Built via GitHub Actions (`https://github.com/omyeol/Umtomi/actions/runs/44753430328`), verified `artifacts/Umtomi-iOS-5.4.7.ipa` (1,949,254 bytes, SHA-256 `1190a0536ebc93b81bb47a8846cbfcde9fee8db3c3668ed3ee96f41c49ca5e96`, `xyz.sabok.umtomi` / `5.4.7` / `9`), and published `https://github.com/omyeol/Umtomi/releases/tag/ios-v5.4.7` + `livecontainer.json` (`9e767c3`). Real-device Face ID unlock verification pending.
+
 # Public release transition: Android 5.15.4 & iOS 5.4.6 on omyeol/Umtomi
 
 - Switched `omyeol/Umtomi` repository visibility from private to **public** (`private: false`).
