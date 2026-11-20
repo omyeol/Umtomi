@@ -1,3 +1,15 @@
+# Public release transition: Android 5.15.4 & iOS 5.4.6 on omyeol/Umtomi
+
+- Switched `omyeol/Umtomi` repository visibility from private to **public** (`private: false`).
+- Updated Android release/updater targets (`UpdateActivity.kt`, `util/update.kt`, `umtomi/Publish-AndroidRelease.py`) and iOS feed publisher (`Publish-iOSRelease.py`) to `omyeol/Umtomi` (`https://github.com/omyeol/Umtomi/releases`), keeping `omyeol/Umtomi-releases/main/livecontainer.json` mirrored for existing LiveContainer subscribers.
+- Bumped Android to `5.15.4` (versionCode `104` in `umtomi/app/build.gradle.kts`) and iOS to `5.4.6` (build `8` in `umtomi/ios/project.yml`).
+- Cleaned and pushed workspace source (`49b8b64`, excluding `.build-*`, `.kotlin`, `build-codex`, `artifacts`, `DriveSync.local.xcconfig`, and legacy `pupil/`), then fast-forwarded local `main` to `72d879b` (after `Publish-iOSRelease.py` committed `livecontainer.json`).
+
+Verification & Artifacts:
+- Android `.\umtomi\Build-Android.ps1 -Test` (`assembleDebug`, 21 JVM unit tests across 7 suites with 0 failures/errors/skipped, `lintDebug`) passed. `artifacts/Umtomi-v5.15.4.apk` and `C:\Users\peopl\OneDrive\DEV\APK\Umtomi-v5.15.4.apk` match (21,142,189 bytes, SHA-256 `7FEE0D021C0E230CBCAD93D524DD50402E0F16A1A06E9B4E8F41623D768B84B2`). Published `https://github.com/omyeol/Umtomi/releases/tag/v5.15.4` (verified via unauthenticated GitHub API).
+- iOS GitHub Actions workflow (`https://github.com/omyeol/Umtomi/actions/runs/44750026692`) succeeded; extracted and verified `artifacts/Umtomi-iOS-5.4.6.ipa` (1,942,283 bytes, ZIP CRC ok, `Info.plist` `xyz.sabok.umtomi` / `5.4.6` / `8`, SHA-256 `72c050cc05c26ec985fd2de3da0fd3554494d7b3b9ebccdc4ca6e1fdeb947bb6`). Published `https://github.com/omyeol/Umtomi/releases/tag/ios-v5.4.6` and verified both `https://raw.githubusercontent.com/omyeol/Umtomi/main/livecontainer.json` and `https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/livecontainer.json`.
+- Remaining unverified on physical hardware: real-device Android biometric unlock, live Google Drive sync, `v5.15.4` in-app updater check against `omyeol/Umtomi`, and real-device iOS 5.4.6 OLED dark mode visual check.
+
 # Android 5.15.3 full iOS port, tab editor & common OLED dark mode
 
 Implemented common OLED pure-black (`#000000`) dark mode across both iOS and Android:

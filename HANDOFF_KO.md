@@ -8,11 +8,15 @@ Codex와 Antigravity에서 같은 폴더를 열어 순서대로 작업한다.
 
 ## 현재 상태
 
-- **작업 폴더가 최신 Android 소스를 갖고 있다.** 로컬 `main`의 HEAD와 로컬에 기록된 `origin/main`은 초기 커밋 `0176962`에 있다. 새 `umtomi/` 소스와 기존 경로의 삭제가 아직 커밋되지 않았다. 다른 도구에서도 이 폴더를 그대로 열고, 커밋과 원격 상태를 정리할 때는 파일을 검토한 후 별도로 진행한다.
-- **Android 5.15.3 시험판, 빌드 103.** `umtomi/app/`에서 작업 중이다. iOS·Android 공통 OLED 다크모드(`#000000` 완전 블랙 배경/하단 바/시스템 바/뷰어)를 적용했고, Android 하단 탭 바 편집기(`PortTabBarEditorActivity`, 드래그·미리 보기·1탭 이동·초기화·더 보기 바텀시트)를 새로 구현했다. 또한 iOS 기준의 즐겨찾기(작품/작가 전환, 중첩 폴더·자동 분류·폴더 편집기), 작품 상세(날짜·캐릭터·저장 상태·작가 즐겨찾기 별표·태그 오버레이·관련 작품), 추천 알고리즘(프로필 기반 확장 검색 및 필터), 뷰어 이어보기 확인/미리 불러오기(`LastReadPages`, `DownloadService` 앵커 우선순위), 다운로드 진행/저장 구분까지 포팅했다. Gradle 빌드·21개 단위 테스트·lint를 통과했고 MuMu DEV(`127.0.0.1:16416`)에서 설치 및 `RGB(0,0,0)` OLED 다크모드·탭 편집·즐겨찾기·작품 상세·설정·뷰어 화면을 확인했다.
-- **다음 Android 작업.** 실제 기기에서 생체 인증과 Google Drive 실계정 동기화를 검증한다. iOS(`umtomi/ios/Umtomi/`)의 OLED 다크모드 수정(`UmtomiApp.swift`, `Views.swift`, `AppLockViews.swift`, `DriveSyncSettings.swift`, `Bookshelf.swift`, `ReaderCaptureView.swift`)은 Windows 호스트에서 중괄호 구문 검사만 수행했으므로 macOS Actions 빌드 또는 Xcode로 빌드·실기기 확인한다.
-- **iOS 5.4.5, 빌드 7.** GitHub Actions에서 빌드한 IPA가 기존 [iOS 릴리스](https://github.com/omyeol/Umtomi-releases/releases/tag/ios-v5.4.5)와 [LiveContainer 소스](https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/livecontainer.json)에 등록되어 있다. (로컬 소스에 OLED 다크모드 수정 반영, 새 IPA 빌드는 macOS/Actions에서 필요)
-- **배포 전환 조건.** iOS와 Android의 기능이 맞고 검증된 뒤 `omyeol/Umtomi`를 공개하고 정식 릴리스를 옮긴다. 그 전에는 기존 릴리스 및 LiveContainer URL을 이용한다.
+- **저장소 공개 전환 및 최신 코드 푸시 완료 (`omyeol/Umtomi`).** GitHub 저장소 `omyeol/Umtomi`를 `public`으로 전환했고(`private: false`), 최신 소스를 커밋 `49b8b64`로 푸시했다. `Publish-iOSRelease.py`가 갱신한 `livecontainer.json` 커밋 `72d879b`까지 로컬 `main`(`origin/main`)에 반영되어 있으며, 로컬 작업 트리에서 추적 파일 변경은 없다(로컬 미추적 파일 `release-notes-5.14.11.md` 제외).
+- **Android 5.15.4 (빌드 104) 공개 릴리스 완료.**
+  - 변경 사항: OLED 다크모드(`#000000`), 드래그/미리보기 하단 탭 바 편집기(`PortTabBarEditorActivity`), iOS 기준 즐겨찾기/작품상세/추천/뷰어 이어보기 프리로드 포팅(`5.15.3`)에 더해, `UpdateActivity.kt`·`util/update.kt`·`umtomi/Publish-AndroidRelease.py`·`Publish-iOSRelease.py`의 배포/업데이트 대상을 `omyeol/Umtomi`로 전환하고 `umtomi/app/build.gradle.kts`를 `5.15.4` (`versionCode = 104`)로 올렸다.
+  - 검증: `.\umtomi\Build-Android.ps1 -Test` 통과 (`assembleDebug`, `testDebugUnitTest` 7개 스위트 21건 실패/스킵 0, `lintDebug` 통과). UI/OLED 픽셀(`RGB(0,0,0)`) 실기/에뮬레이터 검증은 `5.15.3` 빌드에서 MuMu DEV(`127.0.0.1:16416`)로 완료(`5.15.4` 시점에는 MuMu 미연결 상태라 업데이터 URL 변경분만 반영).
+  - 산출물 및 릴리스: `artifacts/Umtomi-v5.15.4.apk` 및 `C:\Users\peopl\OneDrive\DEV\APK\Umtomi-v5.15.4.apk` (21,142,189 bytes, SHA-256 `7FEE0D021C0E230CBCAD93D524DD50402E0F16A1A06E9B4E8F41623D768B84B2`), 릴리스 `https://github.com/omyeol/Umtomi/releases/tag/v5.15.4` (`latest`, 비인증 공개 API 검증 완료).
+- **iOS 5.4.6 (빌드 8) Actions 빌드 및 공개 릴리스 완료.**
+  - 변경 사항: `UmtomiApp.swift`, `Views.swift`, `AppLockViews.swift`, `DriveSyncSettings.swift`, `Bookshelf.swift`, `ReaderCaptureView.swift`에 OLED 순수 블랙 다크모드 적용, `umtomi/ios/project.yml` 버전 `5.4.6` (build `8`) 상향.
+  - 검증 및 산출물: GitHub Actions 워크플로([#44750026692](https://github.com/omyeol/Umtomi/actions/runs/44750026692)) macOS 무서명 IPA 빌드/체크섬 통과, `artifacts/Umtomi-iOS-5.4.6.ipa` (1,942,283 bytes, SHA-256 `72c050cc05c26ec985fd2de3da0fd3554494d7b3b9ebccdc4ca6e1fdeb947bb6`, `Info.plist`: `xyz.sabok.umtomi` / `5.4.6` / `8`), 릴리스 `https://github.com/omyeol/Umtomi/releases/tag/ios-v5.4.6`, LiveContainer 피드 `https://raw.githubusercontent.com/omyeol/Umtomi/main/livecontainer.json` 및 레거시 미러 `https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/livecontainer.json` 공개 검증 완료.
+- **다음 작업.** 실제 기기에서 Android 생체 인증, Google Drive 실계정 동기화, `v5.15.4` 인앱 업데이터(`omyeol/Umtomi/releases`) 조회 및 iOS 실기기(LiveContainer 등) OLED 다크모드 화면 표시를 최종 확인한다.
 
 ## Android 빌드와 확인
 
@@ -25,7 +29,7 @@ adb devices -l
 ```
 
 - MuMu DEV가 실행 중이면 기기 주소 `127.0.0.1:16416`을 확인하고, 설치와 테스트 명령에서 `adb -s 127.0.0.1:16416`으로 기기를 지정한다.
-- 기존 설치에 업데이트할 때는 패키지 `xyz.sabok.umtomi`와 이전 APK 서명을 확인한다. 최신 시험판은 `C:\Users\peopl\OneDrive\DEV\APK\Umtomi-v5.15.3.apk`에 있다.
+- 기존 설치에 업데이트할 때는 패키지 `xyz.sabok.umtomi`와 이전 APK 서명을 확인한다. 최신 정식 빌드는 `C:\Users\peopl\OneDrive\DEV\APK\Umtomi-v5.15.4.apk`에 있다.
 - 책장 저장소나 동기화 동작을 수정하기 전에 [저장소 계약](BOOKSHELF_STORAGE_CONTRACT.md)과 [Omyaru Browser 인수인계](../BROWSER/docs/AI_HANDOFF.md)를 확인한다.
 - iOS 빌드 경로는 `.github/workflows/ios-ipa.yml`에 있다. 이전 작업, 릴리스 식별자, 해시는 [상세 작업 이력](CODEX_HANDOFF.md)에 기록되어 있다.
 
