@@ -67,39 +67,23 @@ struct RootView: View {
     }
 
     private var tabBar: some View {
-        let overflowSelected = store.settings.overflowTabs.contains(store.selectedTab)
-        return HStack(spacing: 0) {
-            ForEach(store.settings.barTabs) { tab in
-                tabButton(LocalizedStringKey(tab.titleKey), icon: tab.systemImage,
-                          selected: !showingMore && store.selectedTab == tab) {
-                    showingMore = false
-                    store.selectedTab = tab
-                }
-            }
-            if store.settings.showsMoreTab {
-                tabButton("More", icon: "ellipsis", selected: showingMore || overflowSelected) {
-                    showingMore = true
-                }
+        let barTabs = store.settings.barTabs
+        let moreSelected = showingMore || store.settings.overflowTabs.contains(store.selectedTab)
+        var items = barTabs.map { tab in
+            NativeBottomTabBar.Item(id: tab.rawValue, title: store.localized(tab.titleKey), symbol: tab.systemImage)
+        }
+        if store.settings.showsMoreTab {
+            items.append(.init(id: "more", title: store.localized("More"), symbol: "ellipsis"))
+        }
+        return NativeBottomTabBar(items: items, selection: moreSelected ? "more" : store.selectedTab.rawValue) { id in
+            if id == "more" { showingMore = true }
+            else if let tab = UmtomiTab(rawValue: id) {
+                showingMore = false
+                store.selectedTab = tab
             }
         }
-        .padding(.vertical, 4)
-        .background(.regularMaterial)
-        .overlay(alignment: .top) { Divider() }
-    }
-
-    private func tabButton(_ title: LocalizedStringKey, icon: String, selected: Bool,
-                           action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 3) {
-                Image(systemName: icon).font(.system(size: 18, weight: selected ? .semibold : .regular))
-                Text(title).font(.caption2).lineLimit(1).minimumScaleFactor(0.65)
-            }
-            .foregroundStyle(selected ? Color.accentColor : Color.secondary)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .frame(height: 49)
+        .background { Rectangle().fill(.bar).ignoresSafeArea(edges: .bottom) }
     }
 
     private var moreMenu: some View {
@@ -166,6 +150,52 @@ struct RootView: View {
                 }
             }
         )
+    }
+}
+
+// The native control provides the system tab appearance while RootView owns
+// tab selection, so iOS does not create a second automatic More screen.
+private struct NativeBottomTabBar: UIViewRepresentable {
+    struct Item: Equatable {
+        let id: String
+        let title: String
+        let symbol: String
+    }
+
+    let items: [Item]
+    let selection: String
+    let select: (String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UITabBar {
+        let bar = UITabBar()
+        bar.delegate = context.coordinator
+        bar.itemPositioning = .fill
+        return bar
+    }
+
+    func updateUIView(_ bar: UITabBar, context: Context) {
+        let coordinator = context.coordinator
+        coordinator.select = select
+        if coordinator.items != items {
+            coordinator.items = items
+            bar.setItems(items.enumerated().map { index, item in
+                UITabBarItem(title: item.title, image: UIImage(systemName: item.symbol), tag: index)
+            }, animated: false)
+        }
+        let index = items.firstIndex { $0.id == selection }
+        bar.selectedItem = index.flatMap { bar.items?[$0] }
+    }
+
+    final class Coordinator: NSObject, UITabBarDelegate {
+        var items: [Item] = []
+        var select: ((String) -> Void)?
+
+        func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+            guard items.indices.contains(item.tag) else { return }
+            select?(items[item.tag].id)
+        }
     }
 }
 

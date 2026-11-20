@@ -72,7 +72,7 @@ APPLE_TEAM_ID=YOUR_TEAM_ID bash build-ipa.sh
 - 뷰어에는 여러 탭, 이어 보기, 페이지형·세로 스크롤과 확대 기능이 있습니다.
 - 책장에는 사진 가져오기, 폴더, 메모, 열 수 조절과 PDF 내보내기 코드가 있습니다. 책장 탭은 기본 순서에서 ‘더 보기’에 들어갈 수 있습니다.
 - iOS 책장은 앱 안의 `UmtomiBookshelf`에 저장하며, Google Drive를 통해 공통 책장에 연결합니다. iOS OAuth 클라이언트가 설정된 빌드에서 사용할 수 있습니다.
-- 이번 소스의 iOS 버전은 `5.4.4` / 빌드 `6`입니다. Bundle ID는 Android와 같은 `xyz.sabok.umtomi`입니다.
+- 이번 소스의 iOS 버전은 `5.4.5` / 빌드 `7`입니다. Bundle ID는 Android와 같은 `xyz.sabok.umtomi`입니다.
 
 ## Google Drive 연결 준비
 

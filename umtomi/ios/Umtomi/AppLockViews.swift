@@ -151,6 +151,7 @@ struct AppLockSettingsView: View {
                             }
                     }
                     .disabled(lock.immediate)
+                    .opacity(lock.immediate ? 0.42 : 1)
                     Button("Lock now") { lock.lockNow() }
                 } footer: {
                     if invalidMinutes && !lock.immediate {
