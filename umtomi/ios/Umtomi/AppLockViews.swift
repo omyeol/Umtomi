@@ -62,7 +62,7 @@ private struct AppUnlockView: View {
                     .disabled(password.isEmpty || lock.authenticating)
                 if lock.biometrics {
                     Button("Use biometrics") {
-                        Task { await lock.unlockWithBiometrics() }
+                        Task(priority: .userInteractive) { await lock.unlockWithBiometrics() }
                     }
                     .disabled(lock.authenticating)
                 }
@@ -76,20 +76,28 @@ private struct AppUnlockView: View {
         .frame(maxWidth: 420)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(colorScheme == .dark ? Color.black : Color(uiColor: .systemBackground))
-        .task(id: phase) {
-            if phase == .active, lock.biometrics, !lock.requiresPasswordSetup, !triedBiometrics {
-                triedBiometrics = true
-                // Keep the system prompt alive when Face ID temporarily makes the scene inactive.
-                Task { await lock.unlockWithBiometrics() }
-            }
+        .onAppear {
+            lock.prepareBiometrics()
+            triggerBiometricsIfActive(phase)
         }
         .onChange(of: phase) { _, next in
             if next == .background {
                 password = ""
                 legacyAuthorized = false
                 triedBiometrics = false
+            } else if next == .active {
+                triggerBiometricsIfActive(next)
+            } else {
+                lock.prepareBiometrics()
             }
         }
+    }
+
+    private func triggerBiometricsIfActive(_ currentPhase: ScenePhase) {
+        guard currentPhase == .active, lock.biometrics, !lock.requiresPasswordSetup, !triedBiometrics else { return }
+        triedBiometrics = true
+        // Run outside .task(id: phase) so Face ID temporarily making the scene inactive does not cancel it.
+        Task(priority: .userInteractive) { await lock.unlockWithBiometrics() }
     }
 
     private func unlock() {

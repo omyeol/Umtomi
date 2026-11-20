@@ -59,6 +59,59 @@ private enum AppLockPassword {
     }
 }
 
+private final class BiometricSession: @unchecked Sendable {
+    private static let queue = DispatchQueue(label: "xyz.sabok.umtomi.biometric", qos: .userInteractive)
+    private let context = LAContext()
+    private let policy: LAPolicy
+    private var prepared = false
+    private var available = false
+    private var availabilityMessage: String?
+
+    init(policy: LAPolicy, fallbackTitle: String?) {
+        self.policy = policy
+        context.localizedFallbackTitle = fallbackTitle
+    }
+
+    func prepare() {
+        Self.queue.async { [self] in
+            guard !prepared else { return }
+            var error: NSError?
+            available = context.canEvaluatePolicy(policy, error: &error)
+            availabilityMessage = error?.localizedDescription
+            prepared = true
+        }
+    }
+
+    func evaluate(reason: String, completion: @escaping @Sendable (Bool, Error?) -> Void) {
+        Self.queue.async { [self] in
+            if !prepared {
+                var error: NSError?
+                available = context.canEvaluatePolicy(policy, error: &error)
+                availabilityMessage = error?.localizedDescription
+                prepared = true
+            }
+            guard available else {
+                let error = NSError(
+                    domain: LAError.errorDomain,
+                    code: LAError.biometryNotAvailable.rawValue,
+                    userInfo: [NSLocalizedDescriptionKey: availabilityMessage ?? "기기 인증을 사용할 수 없습니다."]
+                )
+                DispatchQueue.main.async { completion(false, error) }
+                return
+            }
+            context.evaluatePolicy(policy, localizedReason: reason) { accepted, error in
+                DispatchQueue.main.async {
+                    completion(accepted, error)
+                }
+            }
+        }
+    }
+
+    func invalidate() {
+        context.invalidate()
+    }
+}
+
 @MainActor
 final class AppLock: ObservableObject {
     private enum Key {
@@ -80,7 +133,8 @@ final class AppLock: ObservableObject {
     @Published private(set) var message: String?
 
     private var backgroundAt: Date?
-    private var context: LAContext?
+    private var activeSession: BiometricSession?
+    private var preparedSession: BiometricSession?
     private var attempt = UUID()
     private var phase: ScenePhase = .inactive
     private var failures = 0
@@ -146,11 +200,18 @@ final class AppLock: ObservableObject {
         await authenticate(.deviceOwnerAuthentication, reason: "기존 Umtomi 잠금 확인")
     }
 
+    func prepareBiometrics() {
+        guard locked, biometrics, !requiresPasswordSetup, !authenticating, phase != .background else { return }
+        if preparedSession == nil {
+            let session = BiometricSession(policy: .deviceOwnerAuthenticationWithBiometrics, fallbackTitle: "앱 비밀번호 입력")
+            preparedSession = session
+            session.prepare()
+        }
+    }
+
     func unlockWithBiometrics() async {
         guard locked, biometrics, !requiresPasswordSetup, phase != .background else { return }
-        if await authenticate(.deviceOwnerAuthenticationWithBiometrics, reason: "Umtomi 잠금 해제") {
-            unlock()
-        }
+        _ = await authenticate(.deviceOwnerAuthenticationWithBiometrics, reason: "Umtomi 잠금 해제", unlockOnSuccess: true)
     }
 
     func unlockWithPassword(_ password: String) async {
@@ -232,53 +293,97 @@ final class AppLock: ObservableObject {
         }
     }
 
-    private func authenticate(_ policy: LAPolicy, reason: String) async -> Bool {
+    private func authenticate(_ policy: LAPolicy, reason: String, unlockOnSuccess: Bool = false) async -> Bool {
         guard !authenticating else { return false }
-        let context = LAContext()
-        context.localizedFallbackTitle = policy == .deviceOwnerAuthenticationWithBiometrics ? "앱 비밀번호 입력" : nil
-        var availability: NSError?
-        guard context.canEvaluatePolicy(policy, error: &availability) else {
-            message = availability?.localizedDescription ?? "기기 인증을 사용할 수 없습니다."
-            return false
+        let session: BiometricSession
+        if policy == .deviceOwnerAuthenticationWithBiometrics, let prepared = preparedSession {
+            preparedSession = nil
+            session = prepared
+        } else {
+            session = BiometricSession(
+                policy: policy,
+                fallbackTitle: policy == .deviceOwnerAuthenticationWithBiometrics ? "앱 비밀번호 입력" : nil
+            )
         }
         let id = UUID()
         attempt = id
-        self.context = context
+        activeSession = session
         authenticating = true
         message = nil
-        defer {
-            if attempt == id {
-                self.context = nil
-                authenticating = false
+
+        return await withCheckedContinuation { continuation in
+            session.evaluate(reason: reason) { [weak self] accepted, error in
+                MainActor.assumeIsolated {
+                    guard let self else {
+                        continuation.resume(returning: false)
+                        return
+                    }
+                    let succeeded = accepted && self.attempt == id && self.phase != .background
+                    if self.attempt == id {
+                        if succeeded && unlockOnSuccess {
+                            self.unlock(clearingSession: true)
+                        } else {
+                            let failureMessage: String?
+                            if accepted {
+                                failureMessage = nil
+                            } else if policy == .deviceOwnerAuthenticationWithBiometrics {
+                                failureMessage = Self.biometricFailureMessage(for: error)
+                            } else {
+                                failureMessage = error?.localizedDescription
+                            }
+                            self.activeSession = nil
+                            self.authenticating = false
+                            self.message = failureMessage
+                            if !succeeded && self.locked && self.biometrics && !self.requiresPasswordSetup {
+                                self.prepareBiometrics()
+                            }
+                        }
+                    }
+                    continuation.resume(returning: succeeded)
+                }
             }
-        }
-        do {
-            let accepted = try await context.evaluatePolicy(policy, localizedReason: reason)
-            return accepted && attempt == id && phase != .background
-        } catch {
-            if attempt == id {
-                message = policy == .deviceOwnerAuthenticationWithBiometrics ? "앱 비밀번호로 잠금을 해제할 수 있습니다." : error.localizedDescription
-            }
-            return false
         }
     }
 
-    private func unlock() {
+    private static func biometricFailureMessage(for error: Error?) -> String {
+        if let laError = error as? LAError {
+            switch laError.code {
+            case .biometryNotAvailable, .biometryNotEnrolled, .biometryLockout, .passcodeNotSet:
+                return laError.localizedDescription
+            default:
+                break
+            }
+        }
+        return "앱 비밀번호로 잠금을 해제할 수 있습니다."
+    }
+
+    private func unlock(clearingSession: Bool = false) {
         guard phase != .background else { return }
         failures = 0
         retryAfter = nil
-        message = nil
         // Authentication can finish while iOS is still dismissing its system prompt.
-        suppressInactiveShield = phase == .inactive
+        let suppress = phase == .inactive
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
-        withTransaction(transaction) { locked = false }
+        withTransaction(transaction) {
+            authenticating = false
+            message = nil
+            suppressInactiveShield = suppress
+            locked = false
+        }
+        if clearingSession {
+            activeSession = nil
+        }
+        preparedSession?.invalidate()
+        preparedSession = nil
     }
 
     private func invalidateAuthentication() {
         attempt = UUID()
-        context?.invalidate()
-        context = nil
+        activeSession?.invalidate()
+        activeSession = nil
+        preparedSession?.invalidate()
+        preparedSession = nil
         authenticating = false
     }
 }
