@@ -178,10 +178,25 @@ class BookshelfActivity : BaseActivity() {
         gallery.post { renderGallery() }
     }
 
+    private var promptedSyncFolderInSession = false
+
     override fun onResume() {
         super.onResume()
         shelfActive = true
-        startSharedSync()
+        val account = xyz.sabok.umtomi.sync.CloudAccount.account(this)
+        if (account != null && SharedBookshelfStorage(this).needsInitialFolderSetup && !promptedSyncFolderInSession) {
+            promptedSyncFolderInSession = true
+            AlertDialog.Builder(this)
+                .setTitle("책장 동기화 공용 폴더 지정")
+                .setMessage("Omyaru 브라우저와 Umtomi에서 같은 폴더를 지정하면 책장 원본이 2배로 저장되지 않고 계정별 하위 폴더로 안전하게 공유됩니다.\n\n지금 동기화 폴더를 지정할까요?")
+                .setNegativeButton("나중에") { _, _ -> startSharedSync() }
+                .setPositiveButton("폴더 지정하기") { _, _ ->
+                    startActivity(android.content.Intent(this, BookshelfStorageActivity::class.java))
+                }
+                .show()
+        } else {
+            startSharedSync()
+        }
         if (::gallery.isInitialized) {
             store = BookshelfStore(this)
             if (store.loadError == null) { renderFolders(); updateColumnControls(); gallery.post { renderGallery() } }

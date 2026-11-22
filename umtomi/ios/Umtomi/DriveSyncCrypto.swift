@@ -60,7 +60,7 @@ enum SyncJSON {
     }
 }
 
-struct DriveKeyRing {
+struct DriveKeyRing: Sendable {
     let format: String
     private var keys = [String: String]()
     private var legacy = [String]()

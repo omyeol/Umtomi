@@ -6,12 +6,15 @@ struct DriveSyncSettings: View {
     let store: AppStore
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject private var sync = DriveSyncCoordinator.shared
+    @ObservedObject private var sharedFolder = SharedSyncFolderManager.shared
     @AppStorage(DriveSyncCoordinator.backgroundKey) private var background = false
     @AppStorage(DriveSyncCoordinator.onDemandKey) private var onDemand = false
     @AppStorage(DriveSyncCoordinator.enabledKey) private var enabled = false
     @AppStorage(DriveSyncNotifications.preferenceKey) private var progressNotifications = false
     @State private var requestingNotifications = false
     @State private var notificationPermissionRequired = false
+    @State private var showFolderSetup = false
+    @State private var syncAfterFolderSetup = false
 
     var body: some View {
         Form {
@@ -20,16 +23,48 @@ struct DriveSyncSettings: View {
                     Text("iOS용 Google OAuth 클라이언트를 빌드에 설정하면 연결할 수 있습니다.")
                         .foregroundStyle(.secondary)
                 } else if enabled {
-                    Button("지금 동기화") { Task { await sync.sync(store: store) } }
-                        .disabled(sync.busy)
+                    Button("지금 동기화") {
+                        if sharedFolder.needsInitialFolderSetup {
+                            syncAfterFolderSetup = true
+                            showFolderSetup = true
+                        } else {
+                            Task { await sync.sync(store: store) }
+                        }
+                    }
+                    .disabled(sync.busy)
                     if sync.busy { Button("동기화 중단", role: .cancel) { sync.cancel() } }
+                    Button {
+                        syncAfterFolderSetup = false
+                        showFolderSetup = true
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("동기화 공용 폴더")
+                                Text(sharedFolder.accountSubpathPreview(for: sync.connectedAccountEmail))
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(sharedFolder.isUsingSharedFolder ? "공유 중" : "변경")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(sharedFolder.isUsingSharedFolder ? .green : .blue)
+                        }
+                    }
+                    .disabled(sync.busy)
                     Button("계정 연결 해제", role: .destructive) { sync.disconnect() }
                         .disabled(sync.busy)
                 } else {
                     Button("Google 계정 연결") {
                         Task {
                             await sync.connect()
-                            if enabled { _ = await sync.sync(store: store) }
+                            if enabled {
+                                if sharedFolder.needsInitialFolderSetup {
+                                    syncAfterFolderSetup = true
+                                    showFolderSetup = true
+                                } else {
+                                    _ = await sync.sync(store: store)
+                                }
+                            }
                         }
                     }
                     .disabled(sync.busy)
@@ -82,6 +117,23 @@ struct DriveSyncSettings: View {
         .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
         .background(colorScheme == .dark ? Color.black : Color.clear)
         .navigationTitle("Google Drive 동기화")
+        .onAppear {
+            if enabled && sharedFolder.needsInitialFolderSetup {
+                syncAfterFolderSetup = false
+                showFolderSetup = true
+            }
+        }
+        .sheet(isPresented: $showFolderSetup) {
+            SharedSyncFolderSetupSheet(
+                library: store.bookshelf,
+                accountEmail: sync.connectedAccountEmail
+            ) {
+                if syncAfterFolderSetup {
+                    syncAfterFolderSetup = false
+                    Task { _ = await sync.sync(store: store) }
+                }
+            }
+        }
     }
 
     private func updateNotifications(_ enabled: Bool) {

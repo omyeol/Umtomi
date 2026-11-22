@@ -55,7 +55,7 @@ class BookshelfSyncWorker(context: Context, parameters: WorkerParameters) : Coro
                         notice.report(context.getString(R.string.workspace_drive_reconnect), finished = true)
                         return@runInterruptible
                     }
-                    SharedShelfSync.run(context, account, { token }, progress = { notice.report(it) }, valid = ::valid)
+                    SharedShelfSync.run(context, account, { token }, progress = { notice.report(it) }, maxLockWaitMs = 2_000L, valid = ::valid)
                     if (valid()) notice.report(context.getString(R.string.workspace_drive_complete), finished = true)
                 }
             }

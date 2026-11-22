@@ -1,6 +1,6 @@
 import Foundation
 
-struct DriveRecord: Decodable {
+struct DriveRecord: Decodable, Sendable {
     let id: String
     let name: String
 }
@@ -25,8 +25,10 @@ struct DriveFiles: Sendable {
     private static let limit = 4 * 1024 * 1024
     private static let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpMaximumConnectionsPerHost = 8
         configuration.timeoutIntervalForRequest = 25
         configuration.timeoutIntervalForResource = 90
+        configuration.urlCache = nil
         return URLSession(configuration: configuration, delegate: DriveRedirectBlocker(), delegateQueue: nil)
     }()
 
@@ -115,15 +117,10 @@ struct DriveFiles: Sendable {
             request.setValue(contentType, forHTTPHeaderField: "Content-Type")
             request.httpBody = body
         }
-        let (bytes, response) = try await Self.session.bytes(for: request)
+        let (data, response) = try await Self.session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw DriveSyncFailure.invalid }
         guard (200..<300).contains(http.statusCode) else { throw DriveSyncFailure.http(http.statusCode) }
-        guard response.expectedContentLength <= Int64(Self.limit) else { throw DriveSyncFailure.invalid }
-        var data = Data()
-        for try await byte in bytes {
-            guard data.count < Self.limit else { throw DriveSyncFailure.invalid }
-            data.append(byte)
-        }
+        guard data.count <= Self.limit else { throw DriveSyncFailure.invalid }
         try Task.checkCancellation()
         return data
     }

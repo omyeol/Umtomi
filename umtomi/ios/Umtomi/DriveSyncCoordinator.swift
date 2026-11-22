@@ -12,6 +12,11 @@ final class DriveSyncCoordinator: ObservableObject {
     nonisolated static let onDemandKey = "umtomi.drive.onDemand"
     nonisolated static let enabledKey = "umtomi.drive.enabled"
     nonisolated static let accountKey = "umtomi.drive.account"
+    nonisolated static let accountEmailKey = "umtomi.drive.accountEmail"
+
+    var connectedAccountEmail: String {
+        defaults.string(forKey: Self.accountEmailKey) ?? defaults.string(forKey: Self.accountKey) ?? ""
+    }
 
     @Published private(set) var status = ""
     @Published private(set) var busy = false
@@ -52,6 +57,9 @@ final class DriveSyncCoordinator: ObservableObject {
             let drive = try await makeDrive(account)
             let keys = try await loadKeys(from: drive, namespace: .shelfKey, label: "공통 책장")
             defaults.set(identity, forKey: Self.accountKey)
+            if let email = account.profile?.email, !email.isEmpty {
+                defaults.set(email, forKey: Self.accountEmailKey)
+            }
             defaults.set(true, forKey: Self.enabledKey)
             keyCache = (identity, keys)
             status = "Google Drive 연결됨"
@@ -118,6 +126,9 @@ final class DriveSyncCoordinator: ObservableObject {
             }
         }
         let identity = try checkedIdentity(account)
+        if let email = account.profile?.email, !email.isEmpty {
+            defaults.set(email, forKey: Self.accountEmailKey)
+        }
         if reportStatus { status = "Google 로그인 갱신 중" }
         let drive = try await makeDrive(account)
         guard accountGeneration == generation, defaults.bool(forKey: Self.enabledKey) else {
@@ -241,14 +252,35 @@ final class DriveSyncCoordinator: ObservableObject {
     }
 
     private func syncShelf(_ library: BookshelfLibrary, drive: DriveFiles, keys: DriveKeyRing, directory: URL) async throws {
-        var replica = try DriveReplica(directory: directory, kind: .shelf)
+        let accountRoot = SharedSyncFolderManager.shared.activeAccountRoot(for: connectedAccountEmail)
+        var lockHandle: SharedSyncFolderManager.CrossAppLockHandle? = nil
+        let lockStartedAt = Int64(Date().timeIntervalSince1970 * 1000)
+        if let accountRoot {
+            lockHandle = await SharedSyncFolderManager.acquireSyncLock(
+                in: accountRoot,
+                appName: SharedSyncFolderManager.appIdentifier,
+                maxWaitSeconds: runningInBackground ? 2.0 : 30.0
+            ) { [weak self] waitingText in
+                Task { @MainActor in self?.status = waitingText }
+            }
+            guard lockHandle != nil else {
+                status = "다른 앱(Omyaru Browser)이 동기화 중이어서 책장 동기화를 안전하게 보류했습니다."
+                return
+            }
+        }
+        defer { lockHandle?.release() }
+
+        let stateDir = accountRoot.map { SharedSyncFolderManager.syncStateDirectory(in: $0) } ?? directory
+        var replica = try DriveReplica(directory: stateDir, kind: .shelf)
         let original = try library.syncCatalog()
         let onDemand = defaults.bool(forKey: Self.onDemandKey)
         try await pull(&replica, from: drive, keys: keys, namespace: .shelf, label: "책장")
+        lockHandle?.refreshHeartbeat(appName: SharedSyncFolderManager.appIdentifier, startedAt: lockStartedAt)
+
         let remote = replica.project()
         let photos = original.shelves.flatMap(\.photos)
         var manifests: [UUID: ShelfCloudImage] = [:]
-        let cached = directory.appendingPathComponent("manifests.json")
+        let cached = stateDir.appendingPathComponent("manifests.json")
         var cache = FileManager.default.fileExists(atPath: cached.path)
             ? try JSONDecoder().decode([String: ShelfCloudImage].self, from: Data(contentsOf: cached)) : [:]
         for (index, photo) in photos.enumerated() {
@@ -261,7 +293,7 @@ final class DriveSyncCoordinator: ObservableObject {
                 continue
             }
             guard Self.safeFilename(photo.filename) else { throw DriveSyncFailure.invalid }
-            let url = ShelfFiles.root.appendingPathComponent(photo.filename)
+            let url = ShelfFiles.photoURL(for: photo)
             let checksum = try await Task.detached { try ShelfFiles.digest(url).map { String(format: "%02x", $0) }.joined() }.value
             let id = SyncJSON.uuid(photo.id)
             let key = id + "-" + checksum
@@ -302,15 +334,47 @@ final class DriveSyncCoordinator: ObservableObject {
 
         if !onDemand {
             let images = applied.shelves.flatMap(\.photos)
-            for (index, photo) in images.enumerated() {
-                try Task.checkCancellation()
-                status = "책장 다운로드 \(index)/\(images.count)"
-                progress = Double(index) / Double(max(1, images.count))
-                let file = ShelfFiles.root.appendingPathComponent(photo.filename)
-                if !FileManager.default.fileExists(atPath: file.path), let cloud = photo.cloud {
-                    try await cloud.download(to: file, via: drive, keys: keys) { done, total in
-                        self.status = "책장 사진 받는 중 \(index + 1)/\(images.count) · 조각 \(done)/\(total)"
-                        self.progress = (Double(index) + Double(done) / Double(total)) / Double(images.count)
+            var pendingDownloads: [(ShelfPhoto, ShelfCloudImage, URL)] = []
+            for photo in images {
+                guard let cloud = photo.cloud else { continue }
+                if let accountRoot, SharedSyncFolderManager.existingOriginalURL(sha256: cloud.sha256, in: accountRoot) != nil {
+                    continue // Already exists in shared folder (e.g., downloaded by Omyaru Browser!) -> 0 bytes transferred!
+                }
+                let file = ShelfFiles.photoURL(for: photo)
+                if !FileManager.default.fileExists(atPath: file.path) {
+                    pendingDownloads.append((photo, cloud, file))
+                }
+            }
+            if !pendingDownloads.isEmpty {
+                let totalDown = pendingDownloads.count
+                var doneDown = 0
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    var nextIdx = 0
+                    let limit = max(1, min(4, totalDown))
+                    func enqueue(_ i: Int) {
+                        let (_, cloud, target) = pendingDownloads[i]
+                        group.addTask {
+                            try Task.checkCancellation()
+                            if let accountRoot {
+                                let temp = FileManager.default.temporaryDirectory.appendingPathComponent("umtomi-dl-\(UUID().uuidString).part")
+                                defer { try? FileManager.default.removeItem(at: temp) }
+                                try await cloud.download(to: temp, via: drive, keys: keys)
+                                let bytes = try Data(contentsOf: temp)
+                                _ = try SharedSyncFolderManager.storeOriginal(bytes, expectedSHA256: cloud.sha256, in: accountRoot)
+                            } else {
+                                try await cloud.download(to: target, via: drive, keys: keys)
+                            }
+                        }
+                    }
+                    for _ in 0..<limit { enqueue(nextIdx); nextIdx += 1 }
+                    while try await group.next() != nil {
+                        doneDown += 1
+                        status = "책장 사진 병렬 받는 중 \(doneDown)/\(totalDown)"
+                        progress = Double(doneDown) / Double(totalDown)
+                        if doneDown.isMultiple(of: 8) {
+                            lockHandle?.refreshHeartbeat(appName: SharedSyncFolderManager.appIdentifier, startedAt: lockStartedAt)
+                        }
+                        if nextIdx < totalDown { enqueue(nextIdx); nextIdx += 1 }
                     }
                 }
             }
@@ -338,19 +402,42 @@ final class DriveSyncCoordinator: ObservableObject {
         progress = nil
         let rows = try await drive.list(namespace)
         let read = replica.seen
-        let unread = rows.filter { !read.contains($0.id) }
-        for (index, row) in unread.enumerated() {
-            try Task.checkCancellation()
-            status = "\(label) 변경 기록 받는 중 \(index)/\(unread.count)"
-            progress = Double(index) / Double(unread.count)
-            let batch = try await SyncJSON.read(keys.decrypt(drive.read(row, in: namespace)))
+        let unread = rows.filter { !read.contains($0.id) }.sorted { $0.name < $1.name }
+        guard !unread.isEmpty else { return }
+
+        let total = unread.count
+        var completed = 0
+        let decoded: [(Int, DriveRecord, Data)] = try await withThrowingTaskGroup(of: (Int, DriveRecord, Data).self) { group in
+            var nextIdx = 0
+            let limit = max(1, min(6, total))
+            func enqueue(_ idx: Int) {
+                let row = unread[idx]
+                group.addTask {
+                    try Task.checkCancellation()
+                    let plain = try await keys.decrypt(try await drive.read(row, in: namespace))
+                    return (idx, row, plain)
+                }
+            }
+            for _ in 0..<limit { enqueue(nextIdx); nextIdx += 1 }
+            var out: [(Int, DriveRecord, Data)] = []
+            out.reserveCapacity(total)
+            while let item = try await group.next() {
+                out.append(item)
+                completed += 1
+                status = "\(label) 변경 기록 병렬 받는 중 \(completed)/\(total)"
+                progress = Double(completed) / Double(total)
+                if nextIdx < total { enqueue(nextIdx); nextIdx += 1 }
+            }
+            return out.sorted { $0.0 < $1.0 }
+        }
+        for (_, row, plain) in decoded {
+            let batch = try SyncJSON.read(plain)
             guard let id = batch["id"] as? String,
                   namespace.identity(row.name) == id.replacingOccurrences(of: "-", with: "").lowercased() else {
                 throw DriveSyncFailure.invalid
             }
             try replica.apply(batch)
             replica.markSeen(row.id)
-            if (index + 1).isMultiple(of: 8) { try replica.save() }
         }
         try replica.save()
     }
@@ -373,7 +460,7 @@ final class DriveSyncCoordinator: ObservableObject {
 
     func openPhoto(_ photo: ShelfPhoto, forExport: Bool = false) async throws -> URL {
         guard Self.safeFilename(photo.filename) else { throw DriveSyncFailure.invalid }
-        let local = ShelfFiles.root.appendingPathComponent(photo.filename)
+        let local = ShelfFiles.photoURL(for: photo)
         if FileManager.default.fileExists(atPath: local.path) { return local }
         guard let cloud = photo.cloud else { throw DriveSyncFailure.invalid }
         let (identity, drive) = try await auth()

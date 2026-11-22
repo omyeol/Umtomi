@@ -44,6 +44,18 @@ class DriveSyncActivity : BaseActivity() {
     private lateinit var cancel: TextView
     private lateinit var backgroundSwitch: androidx.appcompat.widget.SwitchCompat
     private var selectedAccount: String? = null
+    private lateinit var syncFolderButton: TextView
+    private var syncAfterFolderSetup = false
+    private var promptedFolderSetup = false
+    private val syncFolderSetupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        refreshSyncFolderLabel()
+        if (syncAfterFolderSetup) {
+            syncAfterFolderSetup = false
+            if (result.resultCode == Activity.RESULT_OK && Build.VERSION.SDK_INT >= 26 && selectedAccount != null) {
+                authorize(syncNow = true)
+            }
+        }
+    }
     private val prefs by lazy { CloudAccount.preferences(this) }
     private val authHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var authGeneration = 0
@@ -113,7 +125,17 @@ class DriveSyncActivity : BaseActivity() {
             }
         }
         sync = style.action(getString(R.string.port_drive_sync_now), prominent = true) {
-            if (Build.VERSION.SDK_INT >= 26) authorize(syncNow = true)
+            if (Build.VERSION.SDK_INT >= 26) {
+                if (SharedBookshelfStorage(this@DriveSyncActivity).needsInitialFolderSetup) {
+                    syncAfterFolderSetup = true
+                    syncFolderSetupLauncher.launch(
+                        android.content.Intent(this@DriveSyncActivity, BookshelfStorageActivity::class.java)
+                            .putExtra(BookshelfStorageActivity.EXTRA_RETURN_OK_ON_COMPLETE, true),
+                    )
+                } else {
+                    authorize(syncNow = true)
+                }
+            }
         }
         disconnect = style.action(getString(R.string.port_drive_disconnect)) {
             CloudAccount.disconnect(this@DriveSyncActivity)
@@ -126,19 +148,27 @@ class DriveSyncActivity : BaseActivity() {
         listOf(connect, sync, disconnect, cancel).forEach {
             account.addView(it, style.matchWrap().apply { topMargin = style.dp(7) })
         }
+        syncFolderButton = style.action("") {
+            syncAfterFolderSetup = false
+            syncFolderSetupLauncher.launch(android.content.Intent(this@DriveSyncActivity, BookshelfStorageActivity::class.java))
+        }
+        refreshSyncFolderLabel()
+        root.addView(syncFolderButton, style.matchWrap().apply { topMargin = style.dp(14) })
         val storage = getSharedPreferences("bookshelf_sync", MODE_PRIVATE)
-        root.addView(style.action("") {
+        val imageModeButton = style.action("") {
             val modes = arrayOf(getString(R.string.port_drive_local), getString(R.string.port_drive_on_demand))
             androidx.appcompat.app.AlertDialog.Builder(this).setTitle(R.string.port_drive_image_mode)
                 .setSingleChoiceItems(modes, if (storage.getString("image_mode", "local") == "on_demand") 1 else 0) { dialog, index ->
                     storage.edit().putString("image_mode", if (index == 1) "on_demand" else "local").apply()
-                    (root.getChildAt(2) as TextView).text = modes[index]
+                    (root.findViewWithTag<TextView>("image_mode_btn"))?.text = modes[index]
                     dialog.dismiss()
                 }.show()
         }.apply {
+            tag = "image_mode_btn"
             setText(if (storage.getString("image_mode", "local") == "on_demand") R.string.port_drive_on_demand else R.string.port_drive_local)
             contentDescription = getString(R.string.port_drive_image_mode)
-        }, style.matchWrap().apply { topMargin = style.dp(16) })
+        }
+        root.addView(imageModeButton, style.matchWrap().apply { topMargin = style.dp(10) })
         backgroundSwitch = androidx.appcompat.widget.SwitchCompat(this).apply {
             setText(R.string.workspace_drive_background)
             setTextColor(style.foreground)
@@ -177,6 +207,30 @@ class DriveSyncActivity : BaseActivity() {
         setBusy(awaitingResolution)
         if (prefs.getBoolean("conflict", false)) status.text = "기존 책장과 클라우드 계정이 다릅니다. 사용할 Google 계정을 한 번 선택해 주세요. 기존 자료는 유지됩니다."
         if (Build.VERSION.SDK_INT < 26) status.text = "Google Drive 동기화는 Android 8 이상에서 사용할 수 있습니다."
+        if (selectedAccount != null && SharedBookshelfStorage(this).needsInitialFolderSetup && !promptedFolderSetup) {
+            promptedFolderSetup = true
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("책장 동기화 공용 폴더 지정")
+                .setMessage("Omyaru 브라우저와 Umtomi에서 같은 폴더를 지정하면 책장 사진이 2배로 저장되지 않고 계정별 하위 폴더로 안전하게 공유됩니다.\n\n지금 동기화 폴더를 지정할까요?")
+                .setNegativeButton("나중에", null)
+                .setPositiveButton("폴더 지정하기") { _, _ ->
+                    syncAfterFolderSetup = false
+                    syncFolderSetupLauncher.launch(android.content.Intent(this, BookshelfStorageActivity::class.java))
+                }
+                .show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::syncFolderButton.isInitialized) refreshSyncFolderLabel()
+    }
+
+    private fun refreshSyncFolderLabel() {
+        val shared = SharedBookshelfStorage(this)
+        val preview = if (shared.needsInitialFolderSetup) "동기화 공용 폴더 지정 필요 (Omyaru와 공유 가능)"
+        else "동기화 폴더: ${shared.accountFolderPreview(accountEmail = selectedAccount)}"
+        syncFolderButton.text = preview
     }
     override fun onSaveInstanceState(outState: Bundle) { outState.putBoolean("awaitingResolution", awaitingResolution); outState.putString("account", selectedAccount); outState.putBoolean("syncAfterAuthorization", syncAfterAuthorization); super.onSaveInstanceState(outState) }
     override fun onSupportNavigateUp(): Boolean { if (busy) cancelSync() else finish(); return true }
@@ -240,9 +294,14 @@ class DriveSyncActivity : BaseActivity() {
         CloudAccount.connect(this, account)
         BookshelfSyncWorker.updateSchedule(this)
         selectedAccount = account
+        refreshSyncFolderLabel()
         if (!syncAfterAuthorization) {
             setBusy(false)
             status.text = "계정 연결 완료\n$account\n지금 동기화를 누르면 데이터를 동기화합니다."
+            if (SharedBookshelfStorage(this).needsInitialFolderSetup) {
+                syncAfterFolderSetup = false
+                syncFolderSetupLauncher.launch(android.content.Intent(this, BookshelfStorageActivity::class.java))
+            }
             return
         }
         syncAfterAuthorization = false

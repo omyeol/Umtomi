@@ -39,5 +39,9 @@
 	<array>
 		<string>xyz.sabok.umtomi.bookshelf-sync</string>
 	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 </dict>
 </plist>

@@ -5,8 +5,8 @@ options:
 settings:
   base:
     PRODUCT_NAME: Umtomi
-    MARKETING_VERSION: 5.4.8
-    CURRENT_PROJECT_VERSION: 10
+    MARKETING_VERSION: 5.4.9
+    CURRENT_PROJECT_VERSION: 11
     SWIFT_VERSION: "5.9"
     IPHONEOS_DEPLOYMENT_TARGET: 17.0
 packages:
@@ -40,6 +40,8 @@ targets:
           - processing
         BGTaskSchedulerPermittedIdentifiers:
           - xyz.sabok.umtomi.bookshelf-sync
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: xyz.sabok.umtomi

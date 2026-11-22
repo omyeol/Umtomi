@@ -30,9 +30,32 @@ struct ShelfCatalog: Codable {
 }
 
 enum ShelfFiles {
-    static var root: URL {
+    static var privateRoot: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("UmtomiBookshelf", isDirectory: true)
+    }
+
+    static var root: URL { privateRoot }
+
+    @MainActor
+    static func photoURL(for photo: ShelfPhoto) -> URL {
+        let fm = FileManager.default
+        let accountEmail = DriveSyncCoordinator.shared.connectedAccountEmail
+        if let accountRoot = SharedSyncFolderManager.shared.activeAccountRoot(for: accountEmail) {
+            if let sha = photo.cloud?.sha256,
+               let byHash = SharedSyncFolderManager.existingOriginalURL(sha256: sha, in: accountRoot) {
+                return byHash
+            }
+            let sharedCandidate = SharedSyncFolderManager.originalsDirectory(in: accountRoot).appendingPathComponent(photo.filename)
+            if fm.fileExists(atPath: sharedCandidate.path) { return sharedCandidate }
+            let privCandidate = privateRoot.appendingPathComponent(photo.filename)
+            if fm.fileExists(atPath: privCandidate.path) { return privCandidate }
+            if let sha = photo.cloud?.sha256, sha.count == 64 {
+                return SharedSyncFolderManager.originalsDirectory(in: accountRoot).appendingPathComponent("\(sha.lowercased()).png")
+            }
+            return sharedCandidate
+        }
+        return privateRoot.appendingPathComponent(photo.filename)
     }
 
     static func digest(_ url: URL) throws -> SHA256.Digest {
@@ -109,8 +132,9 @@ enum ShelfFiles {
         catalog.shelves.prefix(shelfIndex).reduce(0) { $0 + $1.photos.count } + photoIndex
     }
 
+    @MainActor
     static func thumbnail(_ photo: ShelfPhoto, pixels: Int) -> UIImage? {
-        thumbnail(at: root.appendingPathComponent(photo.filename), pixels: pixels)
+        thumbnail(at: photoURL(for: photo), pixels: pixels)
     }
 
     static func thumbnail(at url: URL, pixels: Int) -> UIImage? {
@@ -586,11 +610,26 @@ struct ShelfFolderPicker: View {
     var moveToRoot: (() -> Void)? = nil
     var createFolder: (() -> Void)? = nil
     let select: (UUID) -> Void
+    @State private var pendingID: UUID? = nil
+    @State private var pendingRoot = false
 
     var body: some View {
         NavigationStack {
             List {
-                if let moveToRoot { Button("Move to top level", action: moveToRoot) }
+                if moveToRoot != nil {
+                    Button {
+                        pendingRoot = true
+                        pendingID = nil
+                    } label: {
+                        HStack {
+                            Label("Move to top level", systemImage: pendingRoot ? "checkmark.circle.fill" : "folder")
+                            Spacer()
+                            if pendingRoot {
+                                Image(systemName: "checkmark").foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                }
                 ForEach(library.children(of: nil)) { item in
                     if !excluded.contains(item.id) { row(item) }
                 }
@@ -599,12 +638,40 @@ struct ShelfFolderPicker: View {
             .scrollContentBackground(colorScheme == .dark ? .hidden : .automatic)
             .background(colorScheme == .dark ? Color.black : Color.clear)
             .navigationTitle(title)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .onAppear {
+                if moveToRoot == nil { pendingID = selectedID }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Confirm") {
+                        if pendingRoot, let moveToRoot {
+                            moveToRoot()
+                        } else if let id = pendingID {
+                            select(id)
+                        }
+                    }
+                    .disabled(!pendingRoot && pendingID == nil)
+                }
+            }
         }
     }
 
     private func row(_ root: ImageShelf) -> some View {
-        ShelfFolderRow(library: library, shelf: root, selectedID: selectedID, excluded: excluded, select: select)
+        ShelfFolderRow(
+            library: library,
+            shelf: root,
+            selectedID: pendingRoot ? nil : (pendingID ?? selectedID),
+            excluded: excluded,
+            isMoveMode: moveToRoot != nil,
+            onPick: { id in
+                pendingRoot = false
+                pendingID = id
+            },
+            onConfirm: { id in
+                select(id)
+            }
+        )
     }
 }
 
@@ -613,8 +680,10 @@ private struct ShelfFolderRow: View {
     let shelf: ImageShelf
     let selectedID: UUID?
     let excluded: Set<UUID>
-    let select: (UUID) -> Void
-    @State private var expanded = false
+    let isMoveMode: Bool
+    let onPick: (UUID) -> Void
+    let onConfirm: (UUID) -> Void
+    @State private var expanded = true
 
     var body: some View {
         let children = library.children(of: shelf.id).filter { !excluded.contains($0.id) }
@@ -623,16 +692,44 @@ private struct ShelfFolderRow: View {
         } else {
             DisclosureGroup(isExpanded: $expanded) {
                 ForEach(children) { child in
-                    ShelfFolderRow(library: library, shelf: child, selectedID: selectedID, excluded: excluded, select: select)
+                    ShelfFolderRow(
+                        library: library,
+                        shelf: child,
+                        selectedID: selectedID,
+                        excluded: excluded,
+                        isMoveMode: isMoveMode,
+                        onPick: onPick,
+                        onConfirm: onConfirm
+                    )
                 }
             } label: { label }
         }
     }
 
     private var label: some View {
-        Button { select(shelf.id) } label: {
-            Label(shelf.name, systemImage: selectedID == shelf.id ? "folder.fill" : "folder")
-        }.buttonStyle(.borderless)
+        HStack {
+            Button {
+                onPick(shelf.id)
+                if !isMoveMode { onConfirm(shelf.id) }
+            } label: {
+                Label(shelf.name, systemImage: selectedID == shelf.id ? "folder.fill" : "folder")
+            }
+            .buttonStyle(.borderless)
+            Spacer()
+            if isMoveMode {
+                Button(selectedID == shelf.id ? "Move here" : "Select") {
+                    if selectedID == shelf.id {
+                        onConfirm(shelf.id)
+                    } else {
+                        onPick(shelf.id)
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            } else if selectedID == shelf.id {
+                Image(systemName: "checkmark").foregroundStyle(.tint)
+            }
+        }
     }
 }
 
