@@ -15,8 +15,8 @@ android {
         applicationId = "xyz.sabok.umtomi"
         minSdk = 21
         targetSdk = 35
-        versionCode = 106
-        versionName = "5.15.6"
+        versionCode = 107
+        versionName = "5.15.7"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

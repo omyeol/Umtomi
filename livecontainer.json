@@ -2,14 +2,14 @@
   "name": "Umtomi iOS",
   "identifier": "xyz.sabok.umtomi.source",
   "website": "https://github.com/omyeol/Umtomi",
-  "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/umtomi-icon.png",
+  "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi/main/umtomi-icon.png",
   "apps": [
     {
       "name": "Umtomi",
       "bundleIdentifier": "xyz.sabok.umtomi",
       "developerName": "omyeol",
       "localizedDescription": "Umtomi iOS.",
-      "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi-releases/main/umtomi-icon.png",
+      "iconURL": "https://raw.githubusercontent.com/omyeol/Umtomi/main/umtomi-icon.png",
       "versions": [
         {
           "version": "5.4.9",

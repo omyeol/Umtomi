@@ -6,4 +6,4 @@ After changes, update the handoff with the files touched, verification performed
 
 # Bookshelf development
 
-Bookshelf changes must be coordinated with `../BROWSER` for Omyaru Android, Windows desktop, and standalone Bookshelf. Read `BOOKSHELF_STORAGE_CONTRACT.md` and both projects' latest handoffs before changing storage or synchronization. Preserve stable identities and existing user originals. Do not report shared local storage as implemented until cross-package concurrent access, migration, and removable-media failures have been tested.
+Bookshelf changes must be coordinated with the Omyaru checkout at `C:/Users/peopl/OneDrive/DEV/CODEX/BROWSER` for Omyaru Android, Windows desktop, and standalone Bookshelf. Read `BOOKSHELF_STORAGE_CONTRACT.md` and both projects' latest handoffs before changing storage or synchronization. Preserve stable identities and existing user originals. Do not report shared local storage as implemented until cross-package concurrent access, migration, and removable-media failures have been tested.

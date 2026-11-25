@@ -79,9 +79,12 @@ def main():
     source_bytes = base64.b64decode(seed_source["content"])
     feed = json.loads(source_bytes)
     feed["website"] = f"https://github.com/{REPO}"
+    icon_url = f"https://raw.githubusercontent.com/{REPO}/main/umtomi-icon.png"
+    feed["iconURL"] = icon_url
     app = next((app for app in feed["apps"] if app.get("bundleIdentifier") == BUNDLE), None)
     if app is None:
         raise SystemExit("App not found in existing LiveContainer source")
+    app["iconURL"] = icon_url
     url = f"https://github.com/{REPO}/releases/download/{tag}/{args.ipa.name}"
     entry = {"version": version, "buildVersion": build, "buildNumber": build, "date": args.date,
              "downloadURL": url, "size": len(ipa), "minOSVersion": info["MinimumOSVersion"]}
