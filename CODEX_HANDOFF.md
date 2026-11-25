@@ -1,3 +1,13 @@
+# Android 5.15.7 & iOS 5.4.10 (New Umtomi App Icon)
+
+- Replaced the Umtomi launcher and feed icons with the new 3D gradient U emblem (`1137915`):
+  - iOS (`umtomi/ios/Umtomi/Assets.xcassets/AppIcon.appiconset/`): regenerated all 18 opaque PNG icon assets matching `Contents.json`, bumped `project.yml` to `5.4.10` / build `12`.
+  - Android (`umtomi/app/src/main/`): replaced legacy `res/drawable/umtomi_icon.xml` vector with `res/drawable-anydpi-v26/umtomi_icon.xml` (`<adaptive-icon>`), `res/drawable-nodpi/umtomi_icon_foreground.png` (432x432 edge-padded), `res/values/colors.xml` (`umtomi_icon_background` `#EEF1FC`), `res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/umtomi_icon.png`, and `ic_launcher-web.png` (512x512); bumped `build.gradle.kts` to `5.15.7` / `107`.
+  - LiveContainer & Repo (`umtomi-icon.png`, `livecontainer.json`, `Publish-iOSRelease.py`): added 1024x1024 `umtomi-icon.png` at repo root and switched `iconURL` to `https://raw.githubusercontent.com/omyeol/Umtomi/main/umtomi-icon.png`.
+- Verification & Artifacts:
+  - Android `.\umtomi\Build-Android.ps1 -Test` passed (`assembleDebug`, `lintDebug`, 24 JVM unit tests across 8 suites with 0 failures/errors/skipped). `E:\DEV\CODEX\Umtomi\artifacts\Umtomi-v5.15.7.apk` and `C:\Users\peopl\OneDrive\DEV\APK\Umtomi-v5.15.7.apk` match (`21,450,495` bytes, SHA-256 `4449A7E241CFF2D8800A4BAC10F16AD57AA194D40FA647DD88D24F1D5333CEE3`). Published `https://github.com/omyeol/Umtomi/releases/tag/v5.15.7` (`latest`, verified unauthenticated).
+  - iOS GitHub Actions (`https://github.com/omyeol/Umtomi/actions/runs/45575261755`) succeeded; `E:\DEV\CODEX\Umtomi\artifacts\Umtomi-iOS-5.4.10.ipa` verified (`3,475,312` bytes, `xyz.sabok.umtomi` / `5.4.10` / `12`, SHA-256 `d7284fa796fd0bd838a73559b9627d20caa62063184f8902ce22ed88b30f6438`). Published `https://github.com/omyeol/Umtomi/releases/tag/ios-v5.4.10`, verified `https://raw.githubusercontent.com/omyeol/Umtomi/main/livecontainer.json` (`b6ec2ef`) and `https://raw.githubusercontent.com/omyeol/Umtomi/main/umtomi-icon.png` (`1,108,708` bytes).
+
 # Android 5.15.5 & iOS 5.4.8 (Favorites sort, Settings tab order, Search pull-to-refresh, persistent folder counts, Artist search overlay)
 
 - Implemented across both iOS (`Models.swift`, `AppStore.swift`, `Views.swift`, `TabBarSettingsTests.swift`, `Localizable.strings`, `project.yml` `5.4.8` / `10`) and Android (`WorkspaceNavigation.kt`, `MainActivity.kt`, `PortFavoritesView.kt`, `ClassicBrowseActivity.kt`, `port_strings.xml`, `PortParityTest.kt`, `build.gradle.kts` `5.15.5` / `105`):
